@@ -1,0 +1,5 @@
+sqlalchemy
+pyodbc
+pandas
+schedule
+requests
