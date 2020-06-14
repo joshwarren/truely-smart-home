@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+    postgres:
+        image: postgres:13
+        networks:
+            - postgres_backend
+        environment:
+            - POSTGRES_USER=test
+            - POSTGRES_PASSWORD=test
+        volumes:
+            - data:/data
+    sarum:
+        build: .
+        networks:
+            - postgres_backend
+
+volumes:
+    data:
+
+networks:
+    postgres_backend:
