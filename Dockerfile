@@ -26,7 +26,6 @@ COPY config.json ./
 
 RUN pip install -r requirements.txt
 
-# EXPOSE 5432
+EXPOSE 5432
 
-# CMD [ "python", "./dataCollector.py" ]
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+CMD ["./dataCollector.py"]

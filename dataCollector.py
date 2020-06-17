@@ -1,5 +1,6 @@
-import time
+#!/usr/bin/env python
 
+import time
 import schedule
 from openWeather import OpenWeather
 from supply import supplier

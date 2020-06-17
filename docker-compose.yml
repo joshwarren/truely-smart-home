@@ -10,11 +10,24 @@ services:
             - POSTGRES_PASSWORD=test
         volumes:
             - data:/data
+        deploy:
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+                window: 5s
     sarum:
         build: .
         networks:
             - postgres_backend
-
+        deploy:
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+                window: 5s
+        ports:
+            - "5432:5432"
 volumes:
     data:
 
