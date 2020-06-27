@@ -18,6 +18,9 @@ def loadConfig():
 
 loadConfig()
 
+with db(**dbConfig) as DB:
+    DB.create_schema('config')
+
 
 def hasChanged(newConfig: dict) -> bool:
     with db(**dbConfig) as DB:

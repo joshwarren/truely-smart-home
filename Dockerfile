@@ -2,15 +2,21 @@
 # parent image
 FROM python:3.7-slim
 
-# install PostgreSQL ODBC driver
 RUN apt-get update \
+# install PostgreSQL ODBC driver
  && apt-get install unixodbc -y \
  && apt-get install unixodbc-dev -y \
 #  && apt-get install freetds-dev -y \
 #  && apt-get install freetds-bin -y \
 #  && apt-get install tdsodbc -y \
  && apt-get install odbc-postgresql -y \
- && apt-get install --reinstall build-essential -y
+# GCC compilers
+ && apt-get install --reinstall build-essential -y \
+# SQLAlchemy dependancy
+ && apt-get install -y libpq-dev \
+# Useful utilities
+ && apt-get install screen -y \
+ && apt-get install htop -y
 
 
 # populate "ocbcinst.ini"
@@ -28,4 +34,5 @@ RUN pip install -r requirements.txt
 
 EXPOSE 5432
 
-CMD ["./dataCollector.py"]
+# CMD ["./dataCollector.py"]
+ENTRYPOINT ["tail", "-f", "/dev/null"]

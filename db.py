@@ -121,3 +121,7 @@ class db:
     #     # "?trusted_connection=yes"
     #     # engine_stmt = f"postgresql://{self.server}:{self.port}/{self.database}"
     #     return sqlalchemy.create_engine(engine_stmt)
+
+    def create_schema(self, schemaName: str):
+        self.connection.execute(f'CREATE SCHEMA IF NOT EXISTS {schemaName}')
+        self.connection.commit()

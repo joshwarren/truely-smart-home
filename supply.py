@@ -7,6 +7,9 @@ import requests
 from config import electricalSupplier
 from db import db
 
+with db(**dbConfig) as DB:
+    DB.create_schema('supply')
+
 
 class supplier:
     baseURL: str

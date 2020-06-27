@@ -7,6 +7,9 @@ import requests
 from config import lat, lon, openWeather, dbConfig
 from db import db
 
+with db(**dbConfig) as DB:
+    DB.create_schema('weather')
+
 
 class OpenWeather:
 
