@@ -3,6 +3,7 @@
 FROM python:3.7-slim
 
 RUN apt-get update \
+ && apt-get install apt-utils -y \
 # install PostgreSQL ODBC driver
  && apt-get install unixodbc -y \
  && apt-get install unixodbc-dev -y \
@@ -16,7 +17,8 @@ RUN apt-get update \
  && apt-get install -y libpq-dev \
 # Useful utilities
  && apt-get install screen -y \
- && apt-get install htop -y
+ && apt-get install htop -y \
+ && apt-get install nano -y
 
 
 # populate "ocbcinst.ini"

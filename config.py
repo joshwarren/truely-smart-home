@@ -4,6 +4,7 @@ import json
 import pandas as pd
 import sqlalchemy
 from typing import List
+import pyodbc
 
 from db import db
 
@@ -32,7 +33,7 @@ def hasChanged(newConfig: dict) -> bool:
                 LIMIT 1
                 """, DB.connection).astype(str)
             del oldConfig['configChangedAt']
-        except pd.io.sql.DatabaseError:
+        except pyodbc.Error:
             # table does not exist yet
             oldConfig = pd.DataFrame()
 
