@@ -39,7 +39,7 @@ class db:
         if self.dbType == 'tsql':
             driverStr = '{SQL Server}'
         elif self.dbType == 'PostgreSQL':
-            driverStr = '{PostgreSQL ANSI}'
+            driverStr = '{PostgreSQL Unicode}'
         else:
             raise ValueError(
                 f"The parameter dbType must be 'tsql' or 'PostgreSQL' not {self.dbType}")

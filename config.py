@@ -54,7 +54,7 @@ def checkNewConfigs(configs: List):
             WHERE table_schema = 'config'
                 AND table_name = 'config_history'
                 """)
-        currentFields = [f[0] for f in currentFields]
+        currentFields = [f[0] for f in currentFields.fetchall()]
 
         if len(currentFields) == 0:
             # table does not exist yet
@@ -63,9 +63,9 @@ def checkNewConfigs(configs: List):
         newFields = [f for f in configs if f not in currentFields]
         for field in newFields:
             DB.connection.execute(f"""
-            ALTER TABLE config.config_history
-            ADD COLUMN {field} TEXT NULL
-            """)
+                ALTER TABLE config.config_history
+                ADD COLUMN {field} TEXT NULL
+                """)
 
 
 def updateConfigs(config):
