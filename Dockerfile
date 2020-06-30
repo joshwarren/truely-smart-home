@@ -19,7 +19,7 @@ RUN apt-get update \
  && apt-get install screen -y \
  && apt-get install htop -y \
  && apt-get install nano -y
-
+RUN pip install jupyterlab
 
 # populate "ocbcinst.ini"
 # RUN echo "[FreeTDS]\n\
@@ -35,6 +35,7 @@ COPY config.json ./
 RUN pip install -r requirements.txt
 
 EXPOSE 5432
+EXPOSE 8888
 
 # CMD ["./dataCollector.py"]
 ENTRYPOINT ["tail", "-f", "/dev/null"]
