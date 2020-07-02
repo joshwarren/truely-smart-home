@@ -25,6 +25,8 @@ class OpenWeather:
         forcast.rename(columns={'id': 'weatherId'}, inplace=True)
         forcast.dt = forcast.dt.apply(
             lambda x: datetime.datetime.fromtimestamp(x))
+        forcast.rain = forcast.rain.apply(
+            lambda x: x['1h'] if type(x) is dict else x)
         forcast['forcastDate'] = datetime.datetime.now()
 
         with db(**dbConfig, engine='SQLAlchemy') as DB:
