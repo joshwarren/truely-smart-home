@@ -33,7 +33,7 @@ def hasChanged(newConfig: dict) -> bool:
                 LIMIT 1
                 """, DB.connection).astype(str)
             del oldConfig['configChangedAt']
-        except pyodbc.Error:
+        except pd.io.sql.DatabaseError:
             # table does not exist yet
             oldConfig = pd.DataFrame()
 

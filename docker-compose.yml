@@ -28,6 +28,7 @@ services:
                 window: 5s
         ports:
             - "5432:5432"
+            - "8888:8888"
 volumes:
     data:
 

@@ -4,7 +4,7 @@ import json
 import pandas as pd
 import requests
 
-from config import electricalSupplier
+from config import electricalSupplier, dbConfig
 from db import db
 
 with db(**dbConfig) as DB:
