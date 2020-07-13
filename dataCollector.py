@@ -8,6 +8,12 @@ import schedule
 from openWeather import OpenWeather
 from supply import supplier
 
+
+if sys.argv[1] == '--include-test':
+    OpenWeather.getFreshCut
+    supplier().getFreshCut
+    config.checkForUpdatedConfig
+
 # Weather data
 schedule.every().day.at('02:30').do(OpenWeather.getFreshCut)
 
