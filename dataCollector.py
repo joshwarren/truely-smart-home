@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+import sys
 import time
+
+import config
 import schedule
 from openWeather import OpenWeather
 from supply import supplier
-import config
 
 # Weather data
 schedule.every().day.at('02:30').do(OpenWeather.getFreshCut)

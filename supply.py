@@ -33,5 +33,4 @@ class supplier:
         tariff = requests.get(self.tariffDetails_URL)
         tariff = pd.DataFrame.from_records(json.loads(tariff.text)['results'])
         with db(**dbConfig, engine='SQLAlchemy') as DB:
-            tariff.to_sql('tariff', DB.connection, schema='supply',
-                          index=False, if_exists='append')
+            DB.dataframe_to_table(tariff, 'tariff', schema='supply')

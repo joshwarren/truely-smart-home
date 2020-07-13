@@ -32,17 +32,4 @@ class OpenWeather:
         forcast['forcastDate'] = datetime.datetime.now()
 
         with db(**dbConfig, engine='SQLAlchemy') as DB:
-            forcast.to_sql('forecast', DB.connection, schema='weather',
-                           index=False, if_exists='append')
-
-    # @classmethod
-    # def on_next(cls):
-    #     """Pseudonym for getFreshCut for use by RxPy"""
-    #     # cls.getFreshCut()
-    #     print('yep')
-
-    # def on_error(error):
-    #     pass
-
-    # def on_completed():
-    #     pass
+            DB.dataframe_to_table(forcast, 'forecast', schema='weather')

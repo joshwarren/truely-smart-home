@@ -7,9 +7,12 @@ contex manager. This ensures that connections are automatically closed
 and not accidentally left open.
 """
 
+from typing import List, Optional, Union, Dict
+
+import pandas as pd
+import sqlalchemy
 
 import pyodbc
-import sqlalchemy
 
 
 class db:
@@ -25,14 +28,27 @@ class db:
         self.create_engine()
 
     @property
+    def defaultSchema(self):
+        if self.dbType == 'tsql':
+            return 'dbo'
+        elif self.dbType == 'PostgreSQL':
+            return 'public'
+
+    def schema_check(self, schema: Union[str, None]) -> str:
+        if schema is None:
+            schema = self.defaultSchema
+        else:
+            self.create_schema(schema)
+        return schema
+
+    @property
     def create_engine(self):
         if self.engineType == 'pyodbc':
             return self._create_pyodbc_engine
         elif self.engineType == 'SQLAlchemy':
             return self._create_sqlalchemy_engine
         else:
-            raise ValueError(
-                f"The parameter enigne must be 'pyodbc' or 'SQLAlchemy' not {self.engineType}")
+            assert False, f"The parameter engineType must be 'pyodbc' or 'SQLAlchemy' not {self.engineType}"
 
     def _create_pyodbc_engine(self):
         # the database type must be either SQL Server or PostgreSQL
@@ -41,8 +57,7 @@ class db:
         elif self.dbType == 'PostgreSQL':
             driverStr = '{PostgreSQL Unicode}'
         else:
-            raise ValueError(
-                f"The parameter dbType must be 'tsql' or 'PostgreSQL' not {self.dbType}")
+            assert False, f"The parameter dbType must be 'tsql' or 'PostgreSQL' not {self.dbType}"
 
         if self.username is None:
             loginStr = 'Trusted_Connection=yes;'
@@ -65,7 +80,12 @@ class db:
 
     def _create_sqlalchemy_engine(self):
         """For using an SQLAlchemy engine instead of a pyodbc connection"""
-        engine_stmt = "postgresql://"
+        if self.dbType == 'tsql':
+            engine_stmt = "mssql+pyodbc://"
+        elif self.dbType == 'PostgreSQL':
+            engine_stmt = "postgresql://"
+        else:
+            assert False, f"The parameter dbType must be 'tsql' or 'PostgreSQL' not {self.dbType}"
 
         if self.username is not None:
             engine_stmt += self.username
@@ -101,27 +121,120 @@ class db:
         # error handling can go in here
         return self.close()
 
-    # @property
-    # def sqlalchemyEngine(self):
-    #     """For using an SQLAlchemy engine instead of a pyodbc connection"""
-    #     engine_stmt = "postgresql://"
+    def create_schema(self, schema: str):
+        self.cursor.execute(f'CREATE SCHEMA IF NOT EXISTS {schema}')
+        self.cursor.commit()
 
-    #     if self.username is not None:
-    #         engine_stmt += self.username
-    #         if self.password is not None:
-    #             engine_stmt += f":{self.password}"
+    def table_exists(self, tableName: str, schema: Optional[str] = None) -> bool:
+        """
+        NB: This method will also return False if schema does not exist.
+        """
+        schema = self.schema_check(schema)
 
-    #         engine_stmt += '@'
+        self.cursor.execute(f"""
+            SELECT COUNT(*) AS tableExists
+            FROM information_schema.tables
+            WHERE table_schema = '{schema}'
+                AND table_name = '{tableName}'
+            """)
+        return bool(self.cursor.fetchone()[0])
 
-    #     engine_stmt += self.server
-    #     if self.port is not None:
-    #         engine_stmt += f':{self.port}'
-    #     engine_stmt += f'/{self.database}'
+    def create_fields(self, fields: Union[List[str], str], tableName: str,
+                      schema: Optional[str] = None,
+                      dtypes: Optional[Union[List, str]] = None):
+        """
+        NB: default datatype is VARCHAR(MAX)
+        """
+        schema = self.schema_check(schema)
 
-    #     # "?trusted_connection=yes"
-    #     # engine_stmt = f"postgresql://{self.server}:{self.port}/{self.database}"
-    #     return sqlalchemy.create_engine(engine_stmt)
+        if type(fields) is str:
+            fields = [fields]
 
-    def create_schema(self, schemaName: str):
-        self.connection.execute(f'CREATE SCHEMA IF NOT EXISTS {schemaName}')
-        self.connection.commit()
+        if dtypes is not None:
+            if type(dtypes) is str:
+                dtypes = [dtypes]
+
+            assert len(dtypes) != len(
+                fields), "One dtype must be supplied for each field"
+        else:
+            dtypes = ['VARCHAR(MAX)'] * len(fields)
+
+        sql = f"""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = '{tableName}'
+                AND table_schema = '{schema}''
+            """
+        self.cursor.execute(sql)
+        columns = [f[0] for f in self.cursor.fetchall()]
+
+        assert len(columns) > 0, f"Table {schema}.{tableName} does not exist"
+
+        for field, dtype in zip(fields, dtypes):
+            if field not in columns:
+                sql = f"""
+                    ALTER TABLE {schema}.{tableName}
+                    ADD COLUMN {field} {dtype}
+                    """
+                self.cursor.excute(sql)
+                self.cursor.commit()
+
+    def dataframe_to_table(self, df: pd.DataFrame, tableName: str,
+                           schema: Optional[str] = None,
+                           dtype: Optional[Dict] = None):
+        """Insert dataframe into SQL table
+
+        This method is a wrapper script for pandas.DataFrame.to_sql which ensures all relevent fields are present in the SQL table. If not, the fields are created and set to NULL for all prior entries.
+
+        Table and schema are created if they do not already exist.
+
+        Args:
+            df (pd.DataFrame): pandas DataFrame containing data to be written
+            tableName (str): name of table to be written to
+            schema (str): name of schema to be written to
+        """
+        # Create schema if necessary/set default
+        schema = self.schema_check(schema)
+
+        # Check all required fields exist
+        if self.table_exists(tableName, schema):
+            if dtype is None:
+                create_dtype = [dt.replace('object', 'TEXT')
+                                for dt in df.dtypes]
+            else:
+                create_dtype = []
+                for field in df.columns:
+                    dt = dtype[field]
+                    if dt is sqlalchemy.sql.visitors.VisitableType:
+                        assert self.engineType == 'SQLAlchemy', \
+                            "An SQLAlchemy connection is required to hand SQLAlchemy datatypes"
+                        create_dtype.append(dt.get_dbapi_type(
+                            self.engine.dialect.dbapi))
+                    else:
+                        create_dtype.append(dt)
+            self.create_fields(df.columns, tableName, schema, create_dtype)
+
+        # write data
+        df.to_sql(tableName, self.connection, schema=schema, index=False,
+                  if_exists='append', dtype=dtype)
+
+    def has_changed(self, new: Union[Dict, pd.Series, pd.DataFrame],
+                    tableName: str, schema: str, orderBy: str,
+                    reverse: bool = False) -> bool:
+        if type(new) is not pd.DataFrame:
+            if type(new) is dict:
+                new = pd.Series(new)
+            new = new.to_frame().T.astype(str)
+
+        if self.table_exists(tableName, schema):
+            old = pd.read_sql(f"""
+                SELECT *
+                FROM {schema}.{tableName}
+                ORDER BY "{orderBy}" {"ASC" if reverse else "DESC"}
+                LIMIT 1
+                """, self.connection).astype(str)
+            del old[orderBy]
+        else:
+            old = pd.DataFrame()
+
+        return not old.equals(new)
