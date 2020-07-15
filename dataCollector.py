@@ -9,7 +9,7 @@ from openWeather import OpenWeather
 from supply import supplier
 
 
-if sys.argv[1] == '--include-test':
+if '--include-test' in sys.argv[1]:
     OpenWeather.getFreshCut
     supplier().getFreshCut
     config.checkForUpdatedConfig
