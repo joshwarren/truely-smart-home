@@ -26,6 +26,7 @@ class db:
         self.engineType = engine
 
         self.create_engine()
+        self.cursor = self.connection.cursor()
 
     @property
     def defaultSchema(self):
@@ -49,7 +50,6 @@ class db:
             return self._create_sqlalchemy_engine
         else:
             assert False, f"The parameter engineType must be 'pyodbc' or 'SQLAlchemy' not {self.engineType}"
-        self.cursor = self.connection.cursor()
 
     def _create_pyodbc_engine(self):
         # the database type must be either SQL Server or PostgreSQL
