@@ -11,9 +11,9 @@ from supply import supplier
 
 if '--include-test' in sys.argv[1]:
     print('Starting Tests')
-    OpenWeather.getFreshCut
-    supplier().getFreshCut
-    config.checkForUpdatedConfig
+    OpenWeather.getFreshCut()
+    supplier().getFreshCut()
+    config.checkForUpdatedConfig()
 
     print('Tests complete')
 

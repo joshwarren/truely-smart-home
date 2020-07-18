@@ -89,12 +89,12 @@ class db:
         schema = self.schema_check(schema)
 
         result = self.connection.execute(f"""
-            SELECT COUNT(*) AS tableExists
+            SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = '{schema}'
                 AND table_name = '{tableName}'
             """)
-        return bool(result.fetchone()['tableExists'])
+        return result.rowcount > 0
 
     def create_fields(self, fields: Union[List[str], str], tableName: str,
                       schema: Optional[str] = None,
