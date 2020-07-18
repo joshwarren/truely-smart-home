@@ -32,4 +32,4 @@ class OpenWeather:
                     lambda x: x['1h'] if type(x) is dict else x)
         forcast['forcastDate'] = datetime.datetime.now()
 
-        self.DB.dataframe_to_table(forcast, 'forecast', schema='weather')
+        cls.DB.dataframe_to_table(forcast, 'forecast', schema='weather')
