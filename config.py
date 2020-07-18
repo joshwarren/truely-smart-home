@@ -29,7 +29,7 @@ def updateConfigs(config):
 
     config = config.to_frame().T.astype(str)
 
-    with db(**dbConfig, engine='SQLAlchemy') as DB:
+    with db(**dbConfig) as DB:
         DB.dataframe_to_table(config, 'config_history', schema='config',
                               dtype={'configChangedAt': sqlalchemy.types.DateTime,
                                      'lat': sqlalchemy.types.Float,

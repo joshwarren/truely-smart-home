@@ -12,72 +12,16 @@ from typing import List, Optional, Union, Dict
 import pandas as pd
 import sqlalchemy
 
-import pyodbc
-
 
 class db:
-    def __init__(self, server: str, database: str = None, username: str = None, password: str = None, port: int = None, dbType='tsql', engine='pyodbc'):
+    def __init__(self, server: str, database: str = None, username: str = None, password: str = None, port: int = None, dbType='tsql'):
         self.server = server
         self.database = database
         self.port = port
         self.username = username
         self.password = password
         self.dbType = dbType
-        self.engineType = engine
 
-        self.create_engine()
-        self.cursor = self.connection.cursor()
-
-    @property
-    def defaultSchema(self):
-        if self.dbType == 'tsql':
-            return 'dbo'
-        elif self.dbType == 'PostgreSQL':
-            return 'public'
-
-    def schema_check(self, schema: Union[str, None]) -> str:
-        if schema is None:
-            schema = self.defaultSchema
-        else:
-            self.create_schema(schema)
-        return schema
-
-    @property
-    def create_engine(self):
-        if self.engineType == 'pyodbc':
-            return self._create_pyodbc_engine
-        elif self.engineType == 'SQLAlchemy':
-            return self._create_sqlalchemy_engine
-        else:
-            assert False, f"The parameter engineType must be 'pyodbc' or 'SQLAlchemy' not {self.engineType}"
-
-    def _create_pyodbc_engine(self):
-        # the database type must be either SQL Server or PostgreSQL
-        if self.dbType == 'tsql':
-            driverStr = '{SQL Server}'
-        elif self.dbType == 'PostgreSQL':
-            driverStr = '{PostgreSQL Unicode}'
-        else:
-            assert False, f"The parameter dbType must be 'tsql' or 'PostgreSQL' not {self.dbType}"
-
-        if self.username is None:
-            loginStr = 'Trusted_Connection=yes;'
-        else:
-            loginStr = f'UID={self.username};PWD={self.password};'
-
-        # Create the connection
-        self.connectionStr = f"DRIVER={driverStr};SERVER={self.server};" \
-            + f"{loginStr}"
-        if self.port is not None:
-            self.connectionStr += f";PORT={self.port}"
-
-        if self.database is not None:
-            self.connectionStr += f"DATABASE={self.database};"
-
-        self.connection = pyodbc.connect(self.connectionStr)
-
-    def _create_sqlalchemy_engine(self):
-        """For using an SQLAlchemy engine instead of a pyodbc connection"""
         if self.dbType == 'tsql':
             engine_stmt = "mssql+pyodbc://"
         elif self.dbType == 'PostgreSQL':
@@ -103,7 +47,22 @@ class db:
         self.engine = sqlalchemy.create_engine(engine_stmt)
         self.connection = self.engine.connect()
 
+    @property
+    def defaultSchema(self):
+        if self.dbType == 'tsql':
+            return 'dbo'
+        elif self.dbType == 'PostgreSQL':
+            return 'public'
+
+    def schema_check(self, schema: Union[str, None]) -> str:
+        if schema is None:
+            schema = self.defaultSchema
+        else:
+            self.create_schema(schema)
+        return schema
+
     # A connection should be closed when it is finished with as it can start to hog memory
+
     def close(self):
         self.connection.close()
         if hasattr(self, 'engine'):
@@ -120,8 +79,8 @@ class db:
         return self.close()
 
     def create_schema(self, schema: str):
-        self.cursor.execute(f'CREATE SCHEMA IF NOT EXISTS {schema}')
-        self.cursor.commit()
+        with self.connection.begin():
+            self.connection.execute(f'CREATE SCHEMA IF NOT EXISTS {schema}')
 
     def table_exists(self, tableName: str, schema: Optional[str] = None) -> bool:
         """
@@ -129,13 +88,13 @@ class db:
         """
         schema = self.schema_check(schema)
 
-        self.cursor.execute(f"""
+        result = self.connection.execute(f"""
             SELECT COUNT(*) AS tableExists
             FROM information_schema.tables
             WHERE table_schema = '{schema}'
                 AND table_name = '{tableName}'
             """)
-        return bool(self.cursor.fetchone()[0])
+        return bool(result.fetchone()['tableExists'])
 
     def create_fields(self, fields: Union[List[str], str], tableName: str,
                       schema: Optional[str] = None,
@@ -163,10 +122,10 @@ class db:
             WHERE table_name = '{tableName}'
                 AND table_schema = '{schema}''
             """
-        self.cursor.execute(sql)
-        columns = [f[0] for f in self.cursor.fetchall()]
+        result = self.connection.execute(sql)
+        columns = [f['column_name'] for f in result]
 
-        assert len(columns) > 0, f"Table {schema}.{tableName} does not exist"
+        assert result.rowcount > 0, f"Table {schema}.{tableName} does not exist"
 
         for field, dtype in zip(fields, dtypes):
             if field not in columns:
@@ -174,8 +133,8 @@ class db:
                     ALTER TABLE {schema}.{tableName}
                     ADD COLUMN {field} {dtype}
                     """
-                self.cursor.excute(sql)
-                self.cursor.commit()
+                with self.connection.begin():
+                    self.connection.excute(sql)
 
     def dataframe_to_table(self, df: pd.DataFrame, tableName: str,
                            schema: Optional[str] = None,
@@ -204,17 +163,16 @@ class db:
                 for field in df.columns:
                     dt = dtype[field]
                     if dt is sqlalchemy.sql.visitors.VisitableType:
-                        assert self.engineType == 'SQLAlchemy', \
-                            "An SQLAlchemy connection is required to hand SQLAlchemy datatypes"
                         create_dtype.append(dt.get_dbapi_type(
                             self.engine.dialect.dbapi))
                     else:
                         create_dtype.append(dt)
             self.create_fields(df.columns, tableName, schema, create_dtype)
 
-        # write data
-        df.to_sql(tableName, self.connection, schema=schema, index=False,
-                  if_exists='append', dtype=dtype)
+        with self.connection.begin():
+            # write data
+            df.to_sql(tableName, self.connection, schema=schema, index=False,
+                      if_exists='append', dtype=dtype)
 
     def has_changed(self, new: Union[Dict, pd.Series, pd.DataFrame],
                     tableName: str, schema: str, orderBy: str,

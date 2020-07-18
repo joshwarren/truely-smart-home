@@ -12,6 +12,7 @@ with db(**dbConfig) as DB:
 
 
 class OpenWeather:
+    DB = db(**dbConfig)
 
     @classmethod
     def getFreshCut(cls):
@@ -31,5 +32,4 @@ class OpenWeather:
                     lambda x: x['1h'] if type(x) is dict else x)
         forcast['forcastDate'] = datetime.datetime.now()
 
-        with db(**dbConfig, engine='SQLAlchemy') as DB:
-            DB.dataframe_to_table(forcast, 'forecast', schema='weather')
+        self.DB.dataframe_to_table(forcast, 'forecast', schema='weather')

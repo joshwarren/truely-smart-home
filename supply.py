@@ -16,6 +16,7 @@ class supplier:
     key: str
     productRef: str
     tariffDetails_URL: str
+    DB = db(**dbConfig)
 
     def __init__(self):
         self.__dict__.update(electricalSupplier)
@@ -32,5 +33,5 @@ class supplier:
     def getFreshCut(self):
         tariff = requests.get(self.tariffDetails_URL)
         tariff = pd.DataFrame.from_records(json.loads(tariff.text)['results'])
-        with db(**dbConfig, engine='SQLAlchemy') as DB:
-            DB.dataframe_to_table(tariff, 'tariff', schema='supply')
+
+        self.DB.dataframe_to_table(tariff, 'tariff', schema='supply')
