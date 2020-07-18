@@ -27,15 +27,14 @@ RUN pip install jupyterlab
 # Driver = /usr/lib/x86_64-linux-gnu/odbc/libtdsodbc.so\n\
 # Setup = /usr/lib/x86_64-linux-gnu/odbc/libtdsS.so" >> /etc/odbcinst.ini
 
-
 COPY requirements.txt ./
-COPY *.py ./
-COPY config.json ./
-
 RUN pip install -r requirements.txt
 
 EXPOSE 5432
 EXPOSE 8888
+
+COPY *.py ./
+COPY config.json ./
 
 # CMD ["./dataCollector.py"]
 ENTRYPOINT ["tail", "-f", "/dev/null"]

@@ -49,6 +49,7 @@ class db:
             return self._create_sqlalchemy_engine
         else:
             assert False, f"The parameter engineType must be 'pyodbc' or 'SQLAlchemy' not {self.engineType}"
+        self.cursor = self.connection.cursor()
 
     def _create_pyodbc_engine(self):
         # the database type must be either SQL Server or PostgreSQL
@@ -74,9 +75,6 @@ class db:
             self.connectionStr += f"DATABASE={self.database};"
 
         self.connection = pyodbc.connect(self.connectionStr)
-
-        # The cursor is used to execute SQL on the server
-        self.cursor = self.connection.cursor()
 
     def _create_sqlalchemy_engine(self):
         """For using an SQLAlchemy engine instead of a pyodbc connection"""
