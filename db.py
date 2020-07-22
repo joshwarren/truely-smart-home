@@ -11,6 +11,9 @@ from typing import List, Optional, Union, Dict
 
 import pandas as pd
 import sqlalchemy
+from sqlalchemy import orm
+
+Session = sqlalchemy.orm.sessionmaker()
 
 
 class db:
@@ -47,6 +50,8 @@ class db:
         self.engine = sqlalchemy.create_engine(engine_stmt)
         self.connection = self.engine.connect()
 
+        self.session = Session(bind=self.connection)
+
     @property
     def defaultSchema(self):
         if self.dbType == 'tsql':
@@ -79,8 +84,8 @@ class db:
         return self.close()
 
     def create_schema(self, schema: str):
-        with self.connection.begin():
-            self.connection.execute(f'CREATE SCHEMA IF NOT EXISTS {schema}')
+        self.session.execute(f'CREATE SCHEMA IF NOT EXISTS {schema}')
+        self.session.commit()
 
     def table_exists(self, tableName: str, schema: Optional[str] = None) -> bool:
         """
@@ -88,7 +93,7 @@ class db:
         """
         schema = self.schema_check(schema)
 
-        result = self.connection.execute(f"""
+        result = self.session.execute(f"""
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = '{schema}'
@@ -122,7 +127,7 @@ class db:
             WHERE table_name = '{tableName}'
                 AND table_schema = '{schema}''
             """
-        result = self.connection.execute(sql)
+        result = self.session.execute(sql)
         columns = [f['column_name'] for f in result]
 
         assert result.rowcount > 0, f"Table {schema}.{tableName} does not exist"
@@ -133,8 +138,8 @@ class db:
                     ALTER TABLE {schema}.{tableName}
                     ADD COLUMN {field} {dtype}
                     """
-                with self.connection.begin():
-                    self.connection.excute(sql)
+                self.session.excute(sql)
+                self.session.commit()
 
     def dataframe_to_table(self, df: pd.DataFrame, tableName: str,
                            schema: Optional[str] = None,
@@ -156,8 +161,8 @@ class db:
         # Check all required fields exist
         if self.table_exists(tableName, schema):
             if dtype is None:
-                create_dtype = [dt.replace('object', 'TEXT')
-                                for dt in df.dtypes]
+                create_dtype = [dt.replace('object', 'TEXT') if type(
+                    dt) is str else dt for dt in df.dtypes]
             else:
                 create_dtype = []
                 for field in df.columns:
@@ -169,10 +174,11 @@ class db:
                         create_dtype.append(dt)
             self.create_fields(df.columns, tableName, schema, create_dtype)
 
-        with self.connection.begin():
+        with self.connection.begin() as transaction:
             # write data
-            df.to_sql(tableName, self.connection, schema=schema, index=False,
+            df.to_sql(tableName, transaction, schema=schema, index=False,
                       if_exists='append', dtype=dtype)
+            transaction.commit()
 
     def has_changed(self, new: Union[Dict, pd.Series, pd.DataFrame],
                     tableName: str, schema: str, orderBy: str,
