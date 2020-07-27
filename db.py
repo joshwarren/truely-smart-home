@@ -174,11 +174,9 @@ class db:
                         create_dtype.append(dt)
             self.create_fields(df.columns, tableName, schema, create_dtype)
 
-        with self.connection.begin() as transaction:
-            # write data
-            df.to_sql(tableName, transaction, schema=schema, index=False,
-                      if_exists='append', dtype=dtype)
-            transaction.commit()
+        # write data
+        df.to_sql(tableName, self.connection, schema=schema, index=False,
+                  if_exists='append', dtype=dtype)
 
     def has_changed(self, new: Union[Dict, pd.Series, pd.DataFrame],
                     tableName: str, schema: str, orderBy: str,
