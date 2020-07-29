@@ -117,7 +117,7 @@ class db:
                 dtypes = [dtypes]
 
             assert len(dtypes) != len(
-                fields), "One dtype must be supplied for each field"
+                fields), f"One dtype ({len(dtypes)} supplied) must be supplied for each field ({len(fields)} supplied)"
         else:
             dtypes = ['VARCHAR(MAX)'] * len(fields)
 
@@ -128,10 +128,9 @@ class db:
                 AND table_schema = '{schema}''
             """
         result = self.session.execute(sql)
-        columns = [f['column_name'] for f in result]
-
         assert result.rowcount > 0, f"Table {schema}.{tableName} does not exist"
 
+        columns = [f['column_name'] for f in result]
         for field, dtype in zip(fields, dtypes):
             if field not in columns:
                 sql = f"""
