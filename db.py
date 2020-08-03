@@ -7,7 +7,7 @@ contex manager. This ensures that connections are automatically closed
 and not accidentally left open.
 """
 
-from typing import List, Optional, Union, Dict
+from typing import List, Optional, Union, Dict, Tuple
 
 import pandas as pd
 import sqlalchemy
@@ -103,7 +103,7 @@ class db:
 
     def create_fields(self, fields: Union[List[str], str], tableName: str,
                       schema: Optional[str] = None,
-                      dtypes: Optional[Union[List, str]] = None):
+                      dtypes: Optional[Union[List, Dict, str]] = None):
         """
         NB: default datatype is VARCHAR(MAX)
         """
@@ -113,19 +113,23 @@ class db:
             fields = [fields]
 
         if dtypes is not None:
-            if type(dtypes) is str:
+            if isinstance(dtypes, str):
                 dtypes = [dtypes]
-
-            assert len(dtypes) != len(
-                fields), f"One dtype ({len(dtypes)} supplied) must be supplied for each field ({len(fields)} supplied)"
+            if isinstance(dtypes, dict):
+                dtypes = [self._get_SQL_datatypes(dtypes[f]) for f in fields]
+            else:
+                dtypes = [self._get_SQL_datatypes(dt) for dt in dtypes]
         else:
             dtypes = ['VARCHAR(MAX)'] * len(fields)
+
+        assert len(dtypes) == len(
+            fields), f"One dtype ({len(dtypes)} supplied) must be supplied for each field ({len(fields)} supplied)"
 
         sql = f"""
             SELECT column_name
             FROM information_schema.columns
             WHERE table_name = '{tableName}'
-                AND table_schema = '{schema}''
+                AND table_schema = '{schema}'
             """
         result = self.session.execute(sql)
         assert result.rowcount > 0, f"Table {schema}.{tableName} does not exist"
@@ -160,18 +164,18 @@ class db:
         # Check all required fields exist
         if self.table_exists(tableName, schema):
             if dtype is None:
-                create_dtype = [dt.replace('object', 'TEXT') if type(
-                    dt) is str else dt for dt in df.dtypes]
-            else:
-                create_dtype = []
-                for field in df.columns:
-                    dt = dtype[field]
-                    if dt is sqlalchemy.sql.visitors.VisitableType:
-                        create_dtype.append(dt.get_dbapi_type(
-                            self.engine.dialect.dbapi))
-                    else:
-                        create_dtype.append(dt)
-            self.create_fields(df.columns, tableName, schema, create_dtype)
+                dtype = dict(self._get_column_names_and_types(df))
+
+            # create_dtype = []
+            # for field in df.columns:
+            #     dt = dtype[field]
+            #     if dt is sqlalchemy.sql.visitors.VisitableType:
+            #         create_dtype.append(dt.compile(self.engine.dialect))
+            #     else:
+            #         create_dtype.append(dt)
+
+            # self.create_fields(df.columns, tableName, schema, create_dtype)
+            self.create_fields(df.columns, tableName, schema, dtype)
 
         # write data
         df.to_sql(tableName, self.connection, schema=schema, index=False,
@@ -197,3 +201,91 @@ class db:
             old = pd.DataFrame()
 
         return not old.equals(new)
+
+    @staticmethod
+    def _sqlalchemy_type(col):
+        """Cast pandas datatype to sqlalchemy
+        Code adapted from pandas-dev:
+        https://github.com/pandas-dev/pandas/blob/a0c8425a5f2b74e8a716defd799c4a3716f66eff/pandas/io/sql.py#L1019
+        """
+
+        # Infer type of column, while ignoring missing values.
+        # Needed for inserting typed data containing NULLs, GH 8778.
+        import pandas._libs.lib as lib
+        col_type = lib.infer_dtype(col, skipna=True)
+
+        from sqlalchemy.types import (
+            TIMESTAMP,
+            BigInteger,
+            Boolean,
+            Date,
+            DateTime,
+            Float,
+            Integer,
+            Text,
+            Time,
+        )
+
+        if col_type == "datetime64" or col_type == "datetime":
+            # GH 9086: TIMESTAMP is the suggested type if the column contains
+            # timezone information
+            try:
+                if col.dt.tz is not None:
+                    return TIMESTAMP(timezone=True)
+            except AttributeError:
+                # The column is actually a DatetimeIndex
+                # GH 26761 or an Index with date-like data e.g. 9999-01-01
+                if getattr(col, "tz", None) is not None:
+                    return TIMESTAMP(timezone=True)
+            return DateTime
+        if col_type == "timedelta64":
+            warnings.warn(
+                "the 'timedelta' type is not supported, and will be "
+                "written as integer values (ns frequency) to the database.",
+                UserWarning,
+                stacklevel=8,
+            )
+            return BigInteger
+        elif col_type == "floating":
+            if col.dtype == "float32":
+                return Float(precision=23)
+            else:
+                return Float(precision=53)
+        elif col_type == "integer":
+            if col.dtype == "int32":
+                return Integer
+            else:
+                return BigInteger
+        elif col_type == "boolean":
+            return Boolean
+        elif col_type == "date":
+            return Date
+        elif col_type == "time":
+            return Time
+        elif col_type == "complex":
+            raise ValueError("Complex datatypes not supported")
+
+        return Text
+
+    def _get_column_names_and_types(self, df: pd.DataFrame) -> List[Tuple[str, sqlalchemy.types.TypeEngine]]:
+        """ Taken and adapted from:
+        https://github.com/pandas-dev/pandas/blob/a0c8425a5f2b74e8a716defd799c4a3716f66eff/pandas/io/sql.py#L926
+        """
+        column_names_and_types = []
+        if df.index is not None:
+            for i, idx_label in enumerate(df.index):
+                idx_type = self._sqlalchemy_type(df.index._get_level_values(i))
+                column_names_and_types.append((str(idx_label), idx_type))
+
+        column_names_and_types += [
+            (str(df.columns[i]), self._sqlalchemy_type(df.iloc[:, i]))
+            for i in range(len(df.columns))
+        ]
+
+        return column_names_and_types
+
+    def _get_SQL_datatypes(self, sqlalchemy_dtype: Union[sqlalchemy.types.TypeEngine, str]) -> str:
+        if isinstance(sqlalchemy_dtype, sqlalchemy.types.TypeEngine):
+            return sqlalchemy_dtype.compile(self.engine.dialect)
+        else:
+            return sqlalchemy_dtype
