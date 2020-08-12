@@ -273,8 +273,8 @@ class db:
         """
         column_names_and_types = []
         if df.index is not None:
-            for i, idx_label in enumerate(df.index):
-                idx_type = self._sqlalchemy_type(df.index._get_level_values(i))
+            for i, idx_label in enumerate(df.index.names):
+                idx_type = self._sqlalchemy_type(df.index.get_level_values(i))
                 column_names_and_types.append((str(idx_label), idx_type))
 
         column_names_and_types += [
