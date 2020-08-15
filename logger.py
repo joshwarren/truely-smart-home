@@ -1,7 +1,6 @@
 import logging
-# import sys
-
-# import pyodbc
+import sys
+import traceback
 
 from config import dbConfig, logConfig
 # from config.logger import log_file_path, log_to_db, log_error_level
@@ -66,3 +65,13 @@ if logConfig['log_to_db']:
 # Register logger
 logger = logging.getLogger('Truely-Smart-Home')
 logger.setLevel(logConfig['log_error_level'])
+
+if logConfig['log_exceptions']:
+    def log_exceptions(exctype, value, tb):
+        # logger.exception(
+        # f"UNCAUGHT EXCEPTION: Type: {exctype}, Value: {value}, Traceback: {tb}")
+        # traceback.print_exception(exctype, value, tb)
+        exception = ''.join(traceback.format_exception(exctype, value, tb))
+        logger.exception(exception)
+
+    sys.excepthook = log_exceptions
