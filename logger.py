@@ -1,9 +1,14 @@
+"""Custom logger to write to DB and file.
+
+Based on the following solution:
+https://stackoverflow.com/a/43843623/6709902
+"""
+
 import logging
 import sys
 import traceback
 
 from config import dbConfig, logConfig
-# from config.logger import log_file_path, log_to_db, log_error_level
 from db import db
 
 log_schema = 'log'
