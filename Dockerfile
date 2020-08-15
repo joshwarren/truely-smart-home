@@ -36,5 +36,5 @@ EXPOSE 8888
 COPY *.py ./
 COPY config.json ./
 
-# CMD ["./dataCollector.py"]
+# CMD ["python dataCollector.py --include-test"]
 ENTRYPOINT ["tail", "-f", "/dev/null"]
