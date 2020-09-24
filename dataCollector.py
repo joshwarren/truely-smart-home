@@ -33,4 +33,4 @@ schedule.every().minute.do(config.checkForUpdatedConfig)
 if __name__ == '__main__':
     while True:  # infinite loop
         schedule.run_pending()
-        time.sleep(1)
+        time.sleep(15)
