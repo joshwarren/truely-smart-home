@@ -8,14 +8,14 @@ import schedule
 from openWeather import OpenWeather
 from supply import supplier
 
+if len(sys.argv) > 1:
+    if '--include-test' in sys.argv[1]:
+        print('Starting Tests')
+        OpenWeather.getFreshCut()
+        supplier().getFreshCut()
+        config.checkForUpdatedConfig()
 
-if '--include-test' in sys.argv[1]:
-    print('Starting Tests')
-    OpenWeather.getFreshCut()
-    supplier().getFreshCut()
-    config.checkForUpdatedConfig()
-
-    print('Tests complete')
+        print('Tests complete')
 
 # Weather data
 schedule.every().day.at('02:30').do(OpenWeather.getFreshCut)
