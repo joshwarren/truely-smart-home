@@ -87,6 +87,26 @@ class db:
         self.session.execute(f'CREATE SCHEMA IF NOT EXISTS {schema}')
         self.session.commit()
 
+    def create_scd_history(self, table: str, schema: Optional[str] = None):
+        self.create_schema('history')
+
+        history_table = table if schema is None else f'{schema}_{table}'
+        schema = schema_check(schema)
+
+        # UNION removes creation of identity
+        self.session.execute(f"""
+            SELECT *
+            INTO history.{history_table}
+            FROM {schema}.{table}
+            LIMIT 0
+            UNION
+            SELECT *
+            FROM {schema}.{table}
+            LIMIT 0
+            """)
+
+        # ****************** Not finished *****************
+
     def table_exists(self, tableName: str, schema: Optional[str] = None) -> bool:
         """
         NB: This method will also return False if schema does not exist.

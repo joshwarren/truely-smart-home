@@ -1,3 +1,4 @@
+import base64
 import json
 from typing import Tuple
 
@@ -7,15 +8,16 @@ import mplcyberpunk
 import numpy as np
 import pandas as pd
 import pushover
+import pytz
 import requests
 
-from config import pushNotifications
+from config import electricalSupplier, pushNotifications, dbConfig
+from db import db
 
 
-def get_tariff(product_code: str) -> pd.DataFrame:
-    baseURL = 'https://api.octopus.energy/v1'
+def get_tariff(productCode: str) -> pd.DataFrame:
     agileProduct = requests.get(
-        f"{baseURL}/products/{productCode}/electricity-tariffs/E-1R-{productCode}-L/standard-unit-rates/")
+        f"{electricalSupplier['API_URL']}/products/{productCode}/electricity-tariffs/E-1R-{productCode}-L/standard-unit-rates/")
     tariff = pd.DataFrame.from_records(
         json.loads(agileProduct.text)['results'])
 
@@ -25,9 +27,44 @@ def get_tariff(product_code: str) -> pd.DataFrame:
     tariff['valid_to'] = pd.to_datetime(
         tariff['valid_to']).dt.tz_convert('Europe/London')
 
-    # tariff['diff'] = -tariff.value_inc_vat.diff(periods=1)
-
     return tariff
+
+
+def get_usage() -> pd.DataFrame:
+    token = base64.b64encode(electricalSupplier['key'].encode()).decode()
+    response = requests.get(
+        f'{electricalSupplier["API_URL"]}/electricity-meter-points/{electricalSupplier["MPAN"]}/meters/{electricalSupplier["serialNo"]}/consumption/', headers={"Authorization": f'Basic {token}'})
+
+    usage = pd.DataFrame.from_records(json.loads(response.text)['results'])
+
+    # default times are UTC
+    usage['interval_start'] = pd.to_datetime(
+        usage['interval_start']).dt.tz_convert('Europe/London')
+    usage['interval_end'] = pd.to_datetime(
+        usage['interval_end']).dt.tz_convert('Europe/London')
+
+    return usage
+
+
+def get_cheapest_period():
+    tariff = get_tariff(electricalSupplier['productRef'])
+    tariff = tariff[tariff['valid_to'] >
+                    datetime.now(pytz.timezone('Europe/London'))]
+
+    return tariff[tariff.value_inc_vat == tariff.value_inc_vat.min()].head(1)
+
+
+def immersion_on_during_cheapest_period():
+    cheapest_period = get_cheapest_period()[['valid_from', 'valid_to']]
+
+    action = cheapest_period.T.reset_index(drop=True)
+    action.columns = ['time']
+    action = action.sort_values('action_time')
+    action['action'] = ['on', 'off']
+    action['device_id'] = switchCloudControl['user_apikey']
+
+    with db(**dbConfig) as DB:
+        DB.dataframe_to_table(action, 'action', schema='action')
 
 
 def plot_tariff(tariff: pd.DataFrame, timeFrom_series: str, timeTo_series: str, value_series: str, saveTo: str = None) -> pd.DataFrame:
@@ -87,8 +124,7 @@ def push_tariff():
     client = pushover.Client(pushNotifications['client'],
                              api_token=pushNotifications['token'])
 
-    productCode = 'AGILE-18-02-21'
-    tariff = get_tariff(productCode)
+    tariff = get_tariff(electricalSupplier['productRef'])
     plot_tariff(tariff, 'valid_from', 'valid_to',
                 'value_inc_vat', saveTo='octopus_tariff.png')
 
@@ -106,3 +142,4 @@ def push_tariff():
 
 if __name__ == '__main__':
     push_tariff()
+    immersion_on_during_cheapest_period()
