@@ -18,7 +18,9 @@ RUN apt-get update \
 # Useful utilities
  && apt-get install screen -y \
  && apt-get install htop -y \
- && apt-get install nano -y
+ && apt-get install nano -y \
+ && apt-get install -y procps
+
 RUN pip install jupyterlab
 
 # populate "ocbcinst.ini"
