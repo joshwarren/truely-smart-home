@@ -4,3 +4,5 @@ pyodbc
 pandas
 schedule
 requests
+sonoff-python
+mplcyberpunk
