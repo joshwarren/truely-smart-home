@@ -21,7 +21,8 @@ RUN apt-get update \
  && apt-get install nano -y \
  && apt-get install -y procps
 
-RUN pip install jupyterlab
+RUN pip install jupyter -U \
+ && pip install jupyterlab
 
 # populate "ocbcinst.ini"
 # RUN echo "[FreeTDS]\n\
