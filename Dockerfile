@@ -19,7 +19,9 @@ RUN apt-get update \
  && apt-get install screen -y \
  && apt-get install htop -y \
  && apt-get install nano -y \
- && apt-get install -y procps
+ && apt-get install procps -y \
+ && apt-get install libffi-dev -y
+
 
 RUN pip install jupyter -U \
  && pip install jupyterlab
