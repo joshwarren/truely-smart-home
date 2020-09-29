@@ -79,10 +79,14 @@ class action:
         for item in self.actions.iterrows():
             try:
                 self.sonoff_account.switch(item.action, item.device_id)
+
+                # check of switch is online and has required status
+                device = self.sonoff_account.get_device(item.device_id)
+
+                assert device['online']
+                assert item.action == device['params']['switch']
+
                 item.status = 1  # success
-
-                # ToDo: add check of switches actual status
-
             except:
                 item.status = 0  # failed
 
