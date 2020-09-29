@@ -20,7 +20,8 @@ RUN apt-get update \
  && apt-get install htop -y \
  && apt-get install nano -y \
  && apt-get install procps -y \
- && apt-get install libffi-dev -y
+ && apt-get install libffi-dev -y \
+ && apt-get install zlib1g-dev -y
 
 
 RUN pip install jupyter -U \
