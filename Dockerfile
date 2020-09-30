@@ -1,6 +1,7 @@
 # Based on: https://stackoverflow.com/a/58436657/6709902
 # parent image
-FROM python:3.7-slim
+# FROM python:3.7-slim
+FROM continuumio/miniconda3
 
 RUN apt-get update \
  && apt-get install apt-utils -y \
