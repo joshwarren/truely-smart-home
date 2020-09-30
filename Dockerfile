@@ -1,7 +1,8 @@
 # Based on: https://stackoverflow.com/a/58436657/6709902
 # parent image
 # FROM python:3.7-slim
-FROM continuumio/miniconda3
+# FROM armhf/python
+FROM armhf/debian
 
 RUN apt-get update \
  && apt-get install apt-utils -y \
@@ -22,11 +23,17 @@ RUN apt-get update \
  && apt-get install nano -y \
  && apt-get install procps -y \
  && apt-get install libffi-dev -y \
- && apt-get install zlib1g-dev -y
+ && apt-get install zlib1g-dev -y \
+# python
+ && apt-get -y install python3 \
+    python3-pyqt5 \
+    python3-pip \
+    python3-dev \
+    python-software-properties..
 
 
-RUN pip install jupyter -U \
- && pip install jupyterlab
+RUN pip3 install jupyter -U \
+ && pip3 install jupyterlab
 
 # populate "ocbcinst.ini"
 # RUN echo "[FreeTDS]\n\
@@ -35,7 +42,7 @@ RUN pip install jupyter -U \
 # Setup = /usr/lib/x86_64-linux-gnu/odbc/libtdsS.so" >> /etc/odbcinst.ini
 
 COPY requirements.txt ./
-RUN pip install -r requirements.txt
+RUN pip3 install -r requirements.txt
 
 EXPOSE 5432
 EXPOSE 8888
