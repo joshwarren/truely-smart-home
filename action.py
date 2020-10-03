@@ -16,7 +16,8 @@ with db(**dbConfig) as DB:
         INSERT INTO action.status (status, description)
         VALUES (-1, 'Cancelled')
             , (0, 'Execution failed')
-            , (1, 'Successfully executed');
+            , (1, 'Successfully executed')
+        ON CONFLICT (status) DO NOTHING;
 
         SET TIMEZONE TO 'Europe/London';
 
@@ -52,6 +53,7 @@ class action:
         self.DB.session.execute("""
             UPDATE action.action AS a
             SET status = -1
+            FROM action.action as a2
             LEFT JOIN (
                 SELECT action_time, device_id, MAX(action_id) AS actionable_id
                 FROM action.action
@@ -59,10 +61,11 @@ class action:
                 GROUP BY action_time, device_id
                 HAVING COUNT(*) > 1
             ) AS s
-                ON s.action_time = a.action_time
-                    AND s.device_id = a.device_id
-            WHERE s.action_time IS NULL
-                OR a.action_id = s.actionable_id
+                ON s.action_time = a2.action_time
+                    AND s.device_id = a2.device_id
+            WHERE (s.action_time IS NULL
+                    OR a2.action_id = s.actionable_id)
+                AND a.action_id = a2.action_id
             """)
         self.DB.session.commit()
 
