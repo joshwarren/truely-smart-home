@@ -47,19 +47,19 @@ def get_usage() -> pd.DataFrame:
     return usage
 
 
-def get_cheapest_period():
+def get_cheapest_period(n: int = 1):
     tariff = get_tariff(electricalSupplier['productRef'])
     tariff = tariff[tariff['valid_to'] >
                     datetime.now(pytz.timezone('Europe/London'))]
 
-    return tariff[tariff.value_inc_vat == tariff.value_inc_vat.min()].head(1)
+    return tariff[tariff.value_inc_vat == tariff.value_inc_vat.min()].head(n)
 
 
 def immersion_on_during_cheapest_period():
     cheapest_period = get_cheapest_period()[['valid_from', 'valid_to']]
 
     action = cheapest_period.T.reset_index(drop=True)
-    action.columns = ['time']
+    action.columns = ['action_time']
     action = action.sort_values('action_time')
     action['action'] = ['on', 'off']
     action['device_id'] = switchCloudControl['user_apikey']

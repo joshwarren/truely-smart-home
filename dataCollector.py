@@ -3,23 +3,34 @@
 import sys
 import time
 
-import config
 import schedule
+
+import config
+from action import action
+from octopus_tariff_app import immersion_on_during_cheapest_period, push_tariff
 from openWeather import OpenWeather
 from supply import supplier
-from action import action
-from octopus_tariff_app import push_tariff, immersion_on_during_cheapest_period
-
 
 if len(sys.argv) > 1:
     if '--include-test' in sys.argv[1]:
         print('Starting Tests')
+
+        print('Testing OpenWeather module...')
         OpenWeather.getFreshCut()
+
+        print('Testing Supplier module...')
         supplier().getFreshCut()
+
+        print('Testing Config module...')
         config.checkForUpdatedConfig()
+
+        print('Testing Octopus Tariff App module...')
         push_tariff()
         immersion_on_during_cheapest_period()
+
+        print('Testing Action module...')
         action().execute_todo()
+
         print('Tests complete')
 
 # Weather data
