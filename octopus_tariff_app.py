@@ -1,5 +1,6 @@
 import base64
 import json
+from datetime import datetime
 from typing import Tuple
 
 import matplotlib as mpl
@@ -11,7 +12,7 @@ import pushover
 import pytz
 import requests
 
-from config import electricalSupplier, pushNotifications, dbConfig
+from config import dbConfig, electricalSupplier, pushNotifications
 from db import db
 
 
@@ -142,4 +143,4 @@ def push_tariff():
 
 if __name__ == '__main__':
     push_tariff()
-    # immersion_on_during_cheapest_period()
+    immersion_on_during_cheapest_period()
