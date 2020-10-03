@@ -12,7 +12,8 @@ import pushover
 import pytz
 import requests
 
-from config import dbConfig, electricalSupplier, pushNotifications
+from config import (dbConfig, electricalSupplier, pushNotifications,
+                    switchCloudControl)
 from db import db
 
 
