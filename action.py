@@ -18,9 +18,12 @@ with db(**dbConfig) as DB:
             , (0, 'Execution failed')
             , (1, 'Successfully executed');
 
+        SET TIMEZONE TO 'Europe/London';
+
         CREATE TABLE IF NOT EXISTS action.action (
             action_id SERIAL PRIMARY KEY
-            , created_at DATETIME WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            --, created_at DATETIME WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            , created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             , action_time DATETIME NOT NULL
             , device_id VARCHAR(100) NOT NULL
             , action VARCHAR(100) NOT NULL
