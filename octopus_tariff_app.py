@@ -70,7 +70,7 @@ def immersion_on_during_cheapest_period():
 def plot_tariff(tariff: pd.DataFrame, timeFrom_series: str, timeTo_series: str, value_series: str, saveTo: str = None) -> pd.DataFrame:
     plt.style.use("cyberpunk")
 
-    diff = -tariff[value_series].diff(periods=1)
+    tariff['diff'] = -tariff[value_series].diff(periods=1)
 
     fig, ax = plt.subplots()
     ax.step(tariff[timeFrom_series], tariff[value_series])
@@ -84,30 +84,30 @@ def plot_tariff(tariff: pd.DataFrame, timeFrom_series: str, timeTo_series: str, 
     ax.set_xticklabels([time.time().strftime("%I %p").lstrip('0')
                         for time in t], rotation=90)
 
-    def label(label_series: pd.Series, text_offset: Tuple[float]):
+    def label(label_series: pd.Series, text_offset: Tuple[float, float]):
         # Wrapper for annotate method
-
         xlim = [mpl.dates.num2date(l) for l in ax.get_xlim()]
         xaxis_range = (xlim[1] - xlim[0]).total_seconds() / 60 / 60
 
         strftime = "%I %p" if label_series[timeTo_series].strftime(
             "%M") == "00" else "%I:%M %p"
         x_shift_hrs = text_offset[0] * xaxis_range
+
         ax.annotate(label_series[timeTo_series].strftime(strftime).lstrip('0'),
                     xy=(label_series[timeTo_series],
-                        label_series[value_series] + diff / 2),
+                        label_series[value_series] + label_series['diff'] / 2),
                     xytext=(label_series[timeTo_series] + pd.Timedelta(
                         f'{x_shift_hrs} hours'), (label_series[value_series]
-                                                  + diff / 2) * text_offset[1]),
+                                                  + label_series['diff'] / 2) * text_offset[1]),
                     arrowprops={'arrowstyle': '->'})
 
     # table start and end times of large jumps in price
-    for big_step in tariff[diff > 10].iterrows():
+    for big_step in tariff[tariff['diff'] > 10].iterrows():
         big_step = big_step[1]
         label(big_step, (-0.1 if big_step[timeTo_series].strftime(
             "%M") == "00" else -0.12, 1.1))
 
-    for big_step in tariff[diff < -10].iterrows():
+    for big_step in tariff[tariff['diff'] < -10].iterrows():
         big_step = big_step[1]
         label(big_step, (0.04, 1.1))
 
@@ -142,4 +142,4 @@ def push_tariff():
 
 if __name__ == '__main__':
     push_tariff()
-    immersion_on_during_cheapest_period()
+    # immersion_on_during_cheapest_period()
