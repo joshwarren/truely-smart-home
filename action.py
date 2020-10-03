@@ -19,11 +19,8 @@ with db(**dbConfig) as DB:
             , (1, 'Successfully executed')
         ON CONFLICT (status) DO NOTHING;
 
-        SET TIMEZONE TO 'Europe/London';
-
         CREATE TABLE IF NOT EXISTS action.action (
             action_id SERIAL PRIMARY KEY
-            --, created_at DATETIME WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             , created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             , action_time DATETIME NOT NULL
             , device_id VARCHAR(100) NOT NULL
