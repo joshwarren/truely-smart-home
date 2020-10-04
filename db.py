@@ -198,7 +198,7 @@ class db:
             self.create_fields(df.columns, tableName, schema, dtype)
 
         # write data
-        df.to_sql(tableName, self.session, schema=schema, index=False,
+        df.to_sql(tableName, self.connection, schema=schema, index=False,
                   if_exists='append', dtype=dtype)
         self.session.commit()
 
