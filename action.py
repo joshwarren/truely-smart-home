@@ -21,11 +21,11 @@ with db(**dbConfig) as DB:
 
         CREATE TABLE IF NOT EXISTS action.action (
             action_id SERIAL PRIMARY KEY
-            , created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            , action_time DATETIME NOT NULL
+            , created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            , action_time TIMESTAMP WITH TIME ZONE NOT NULL
             , device_id VARCHAR(100) NOT NULL
             , action VARCHAR(100) NOT NULL
-            , actioned_at DATETIME
+            , actioned_at TIMESTAMP WITH TIME ZONE
             , status SMALLINT
             , CONSTRAINT fk_status FOREIGN KEY(status)
                 REFERENCES action.status(status)
@@ -51,7 +51,7 @@ class action:
             UPDATE action.action AS a
             SET status = -1
             FROM (
-                    SELECT *, ROW_NUMBER() OVER (PARTITION BY action_time, device_id ORDER BY created_at DESC) AS
+                    SELECT *, ROW_NUMBER() OVER (PARTITION BY action_time, device_id ORDER BY created_at DESC) AS rn
                     FROM action.action
                     WHERE status IS NULL
                 ) AS a2
