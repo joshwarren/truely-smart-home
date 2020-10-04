@@ -50,18 +50,12 @@ class action:
         self.DB.session.execute("""
             UPDATE action.action AS a
             SET status = -1
-            FROM action.action as a2
-            LEFT JOIN (
-                SELECT action_time, device_id, MAX(action_id) AS actionable_id
-                FROM action.action
-                WHERE status IS NULL
-                GROUP BY action_time, device_id
-                HAVING COUNT(*) > 1
-            ) AS s
-                ON s.action_time = a2.action_time
-                    AND s.device_id = a2.device_id
-            WHERE (s.action_time IS NULL
-                    OR a2.action_id = s.actionable_id)
+            FROM (
+                    SELECT *, ROW_NUMBER() OVER (PARTITION BY action_time, device_id ORDER BY created_at DESC) AS
+                    FROM action.action
+                    WHERE status IS NULL
+                ) AS a2
+            WHERE a2.rn != 1
                 AND a.action_id = a2.action_id
             """)
         self.DB.session.commit()

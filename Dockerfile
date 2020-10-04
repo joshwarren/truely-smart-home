@@ -29,7 +29,7 @@ RUN apt-get update \
     python3-pyqt5 \
     python3-pip \
     python3-dev \
-    python-software-properties..
+    python-software-properties
 
 
 RUN pip3 install jupyter -U \
