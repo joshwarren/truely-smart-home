@@ -94,7 +94,7 @@ class db:
         schema = schema_check(schema)
 
         # UNION removes creation of identity
-        self.session.execute(f"""
+        self.connection.execute(f"""
             SELECT *
             INTO history.{history_table}
             FROM {schema}.{table}
@@ -113,7 +113,7 @@ class db:
         """
         schema = self.schema_check(schema)
 
-        result = self.session.execute(f"""
+        result = self.connection.execute(f"""
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = '{schema}'
@@ -151,7 +151,7 @@ class db:
             WHERE table_name = '{tableName}'
                 AND table_schema = '{schema}'
             """
-        result = self.session.execute(sql)
+        result = self.connection.execute(sql)
         assert result.rowcount > 0, f"Table {schema}.{tableName} does not exist"
 
         columns = [f['column_name'] for f in result]
@@ -161,7 +161,7 @@ class db:
                     ALTER TABLE {schema}.{tableName}
                     ADD COLUMN {field} {dtype}
                     """
-                self.session.excute(sql)
+                self.session.execute(sql)
                 self.session.commit()
 
     def dataframe_to_table(self, df: pd.DataFrame, tableName: str,
@@ -198,8 +198,9 @@ class db:
             self.create_fields(df.columns, tableName, schema, dtype)
 
         # write data
-        df.to_sql(tableName, self.connection, schema=schema, index=False,
+        df.to_sql(tableName, self.session, schema=schema, index=False,
                   if_exists='append', dtype=dtype)
+        self.session.commit()
 
     def has_changed(self, new: Union[Dict, pd.Series, pd.DataFrame],
                     tableName: str, schema: str, orderBy: str,
