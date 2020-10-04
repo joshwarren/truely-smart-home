@@ -199,7 +199,8 @@ class db:
 
         # write data
         df.to_sql(tableName, self.connection, schema=schema, index=False,
-                  if_exists='append', dtype=dtype)
+                  if_exists='append', dtype=dtype, method='multi',
+                  chunksize=1000)
         self.session.commit()
 
     def has_changed(self, new: Union[Dict, pd.Series, pd.DataFrame],
