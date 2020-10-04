@@ -16,11 +16,11 @@ services:
     #     networks:
     #         - postgres_backend
     #     restart: always
-    #     ports:
-    #         - "5432:5432"
+        ports:
+            - "5432:5432"
     #         - "8888:8888"
 volumes:
     data:
 
-# networks:
-#     postgres_backend:
+networks:
+    postgres_backend:
