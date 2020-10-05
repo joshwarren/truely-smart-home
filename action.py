@@ -68,6 +68,7 @@ class action:
             WHERE actioned_at IS NULL
                 AND action_time <= CURRENT_TIMESTAMP
                 AND status IS NULL
+            ORDER BY action_time DESC
         """, self.DB.connection)
 
     def execute_todo(self):
