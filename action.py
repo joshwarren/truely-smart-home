@@ -73,7 +73,7 @@ class action:
     def execute_todo(self):
         self.check_multi_action()
 
-        for item in self.actions.iterrows():
+        for idx, item in self.actions.iterrows():
             try:
                 self.sonoff_account.switch(item.action, item.device_id)
 
