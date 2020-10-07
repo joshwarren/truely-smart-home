@@ -6,6 +6,7 @@ import requests
 
 from config import electricalSupplier, dbConfig
 from db import db
+import octopus_tariff_app as octopus
 
 with db(**dbConfig) as DB:
     DB.create_schema('supply')
@@ -22,16 +23,19 @@ class supplier:
         self.__dict__.update(electricalSupplier)
         self.key = base64.b64encode(self.key.encode()).decode()
 
+    @property
+    def get_tariff(self):
         if self.supplier == 'Octopus Energy':
-            self._setup_Octopus()
+            return octopus.get_tariff
 
-    def _setup_Octopus(self):
-        self.baseURL = 'https://api.octopus.energy/v1'
-
-        self.tariffDetails_URL = f"{self.baseURL}/products/{self.productRef}/electricity-tariffs/E-1R-{self.productRef}-C/standard-unit-rates/"
+    @property
+    def get_usage(self):
+        if self.supplier == 'Octopus Energy':
+            return octopus.get_usage
 
     def getFreshCut(self):
-        tariff = requests.get(self.tariffDetails_URL)
-        tariff = pd.DataFrame.from_records(json.loads(tariff.text)['results'])
-
+        tariff = self.get_tariff()
         self.DB.dataframe_to_table(tariff, 'tariff', schema='supply')
+
+        usage = self.get_usage()
+        self.DB.dataframe_to_table(usage, 'consumption', schema='supply')
