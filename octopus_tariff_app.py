@@ -33,11 +33,11 @@ def get_tariff(productCode: str) -> pd.DataFrame:
 
 
 def get_usage():
-    get_usage_base(electricalSupplier["MPAN"])
+    return get_usage_base(electricalSupplier["MPAN"])
 
 
 def get_export():
-    get_usage_base(electricalSupplier["MPAN_export"])
+    return get_usage_base(electricalSupplier["MPAN_export"])
 
 
 def get_usage_base(MPAN) -> pd.DataFrame:
