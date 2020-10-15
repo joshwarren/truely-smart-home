@@ -166,7 +166,8 @@ class db:
 
     def dataframe_to_table(self, df: pd.DataFrame, tableName: str,
                            schema: Optional[str] = None,
-                           dtype: Optional[Dict] = None):
+                           dtype: Optional[Dict] = None,
+                           dedup: bool = False):
         """Insert dataframe into SQL table
 
         This method is a wrapper script for pandas.DataFrame.to_sql which ensures all relevent fields are present in the SQL table. If not, the fields are created and set to NULL for all prior entries.
@@ -202,6 +203,8 @@ class db:
                   if_exists='append', dtype=dtype, method='multi',
                   chunksize=1000)
         self.session.commit()
+        if dedup:
+            self.dedup(schema, tableName)
 
     def has_changed(self, new: Union[Dict, pd.Series, pd.DataFrame],
                     tableName: str, schema: str, orderBy: str,
@@ -311,3 +314,23 @@ class db:
             return sqlalchemy_dtype.compile(self.engine.dialect)
         else:
             return sqlalchemy_dtype
+
+    def dedup(self, table: str, schema: str):
+        sql = f"""
+        create temporary table dedupped as
+        select *
+        from {schema}.{table} t
+        union
+        select *
+        from {schema}.{table} t2;
+
+        truncate table {schema}.{table};
+
+        insert into {schema}.{table}
+        select *
+        from dedupped;
+
+        drop table dedupped;
+        """
+
+        self.connection.execute(sql)
