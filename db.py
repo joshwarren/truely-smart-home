@@ -204,7 +204,7 @@ class db:
                   chunksize=1000)
         self.session.commit()
         if dedup:
-            self.dedup(schema, tableName)
+            self.dedup(tableName, schema)
 
     def has_changed(self, new: Union[Dict, pd.Series, pd.DataFrame],
                     tableName: str, schema: str, orderBy: str,
