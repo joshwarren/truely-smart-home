@@ -316,21 +316,21 @@ class db:
             return sqlalchemy_dtype
 
     def dedup(self, table: str, schema: str):
-        sql = f"""
-        create temporary table dedupped as
-        select *
-        from {schema}.{table} t
-        union
-        select *
-        from {schema}.{table} t2;
+        sql = """
+        CREATE TEMPORARY TABLE dedupped AS
+        SELECT *
+        FROM {schema}.{table} t
+        UNION
+        SELECT *
+        FROM {schema}.{table} t2;
 
-        truncate table {schema}.{table};
+        TRUNCATE TABLE {schema}.{table};
 
-        insert into {schema}.{table}
-        select *
-        from dedupped;
+        INSERT INTO {schema}.{table}
+        SELECT *
+        FROM dedupped;
 
-        drop table dedupped;
+        DROP TABLE dedupped;
         """
 
         self.session.execute(sql)

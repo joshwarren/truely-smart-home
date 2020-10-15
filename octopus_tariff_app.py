@@ -32,10 +32,18 @@ def get_tariff(productCode: str) -> pd.DataFrame:
     return tariff
 
 
-def get_usage() -> pd.DataFrame:
+def get_usage():
+    get_usage_base(electricalSupplier["MPAN"])
+
+
+def get_export():
+    get_usage_base(electricalSupplier["MPAN_export"])
+
+
+def get_usage_base(MPAN) -> pd.DataFrame:
     token = base64.b64encode(electricalSupplier['key'].encode()).decode()
     response = requests.get(
-        f'{electricalSupplier["API_URL"]}/electricity-meter-points/{electricalSupplier["MPAN"]}/meters/{electricalSupplier["serialNo"]}/consumption/', headers={"Authorization": f'Basic {token}'})
+        f'{electricalSupplier["API_URL"]}/electricity-meter-points/{MPAN}/meters/{electricalSupplier["serialNo"]}/consumption/', headers={"Authorization": f'Basic {token}'})
 
     usage = pd.DataFrame.from_records(json.loads(response.text)['results'])
 

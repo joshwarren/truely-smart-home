@@ -33,6 +33,11 @@ class supplier:
         if self.supplier == 'Octopus Energy':
             return octopus.get_usage
 
+    @property
+    def get_export(self):
+        if self.supplier == 'Octopus Energy':
+            return octopus.get_export()
+
     def getFreshCut(self):
         tariff = self.get_tariff(electricalSupplier['productRef'])
         self.DB.dataframe_to_table(tariff, 'tariff', schema='supply',
@@ -40,4 +45,8 @@ class supplier:
 
         usage = self.get_usage()
         self.DB.dataframe_to_table(usage, 'consumption', schema='supply',
+                                   dedup=True)
+
+        export = self.get_export()
+        self.DB.dataframe_to_table(export, 'exported', schema='supply',
                                    dedup=True)
