@@ -333,4 +333,5 @@ class db:
         drop table dedupped;
         """
 
-        self.connection.execute(sql)
+        self.session.execute(sql)
+        self.session.commit()
