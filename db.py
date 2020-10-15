@@ -316,7 +316,7 @@ class db:
             return sqlalchemy_dtype
 
     def dedup(self, table: str, schema: str):
-        sql = """
+        sql = f"""
         CREATE TEMPORARY TABLE dedupped AS
         SELECT *
         FROM {schema}.{table} t
