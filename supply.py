@@ -34,8 +34,10 @@ class supplier:
             return octopus.get_usage
 
     def getFreshCut(self):
-        tariff = self.get_tariff()
-        self.DB.dataframe_to_table(tariff, 'tariff', schema='supply')
+        tariff = self.get_tariff(electricalSupplier['productRef'])
+        self.DB.dataframe_to_table(tariff, 'tariff', schema='supply',
+                                   dedup=True)
 
         usage = self.get_usage()
-        self.DB.dataframe_to_table(usage, 'consumption', schema='supply')
+        self.DB.dataframe_to_table(usage, 'consumption', schema='supply',
+                                   dedup=True)
