@@ -36,7 +36,7 @@ class supplier:
     @property
     def get_export(self):
         if self.supplier == 'Octopus Energy':
-            return octopus.get_export()
+            return octopus.get_export
 
     def getFreshCut(self):
         tariff = self.get_tariff(electricalSupplier['productRef'])
