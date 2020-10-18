@@ -10,6 +10,7 @@ from action import action
 from octopus_tariff_app import immersion_on_during_cheapest_period, push_tariff
 from openWeather import OpenWeather
 from supply import supplier
+from microGeneration import Microgen
 
 if len(sys.argv) > 1:
     if '--include-test' in sys.argv[1]:
@@ -31,16 +32,19 @@ if len(sys.argv) > 1:
         print('Testing Action module...')
         action().execute_todo()
 
+        print('Testing Microgen module...')
+        Microgen().getRealTimeData()
+
         print('Tests complete')
 
 # Weather data
 schedule.every().day.at('02:30').do(OpenWeather.getFreshCut)
 
 # Micro generation
+microgen = Microgen()
+schedule.every(5).minutes.do(microgen.getRealTimeData)
 
-# Smart Meter
-
-# Electricity supplier
+# Smart Meter/Electricity supplier
 schedule.every().day.at('03:00').do(supplier().getFreshCut)
 
 # Octopus tariff
