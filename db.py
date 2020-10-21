@@ -134,9 +134,11 @@ class db:
 
         if dtypes is not None:
             if isinstance(dtypes, str):
+                # Single field
                 dtypes = [dtypes]
             if isinstance(dtypes, dict):
-                dtypes = [self._get_SQL_datatypes(dtypes[f]) for f in fields]
+                dtypes = [self._get_SQL_datatypes(
+                    dtypes.get(f, sqlalchemy.types.String())) for f in fields]
             else:
                 dtypes = [self._get_SQL_datatypes(dt) for dt in dtypes]
         else:
@@ -154,15 +156,24 @@ class db:
         result = self.connection.execute(sql)
         assert result.rowcount > 0, f"Table {schema}.{tableName} does not exist"
 
-        columns = [f['column_name'] for f in result]
+        columns = [f['column_name'].lower() for f in result]
+
         for field, dtype in zip(fields, dtypes):
-            if field not in columns:
+            if field.lower() not in columns:
                 sql = f"""
                     ALTER TABLE {schema}.{tableName}
-                    ADD COLUMN {field} {dtype}
+                    ADD COLUMN {field.lower()} {dtype}
                     """
                 self.session.execute(sql)
                 self.session.commit()
+
+    def set_field_names_to_lower_case(self, df: Union[pd.DataFrame, dict]
+                                      ) -> Union[pd.DataFrame, dict]:
+        if isinstance(df, pd.DataFrame):
+            df.columns = map(str.lower, df.columns)
+            return df
+        elif isinstance(df, dict):
+            return {k.lower(): v for k, v in df.items()}
 
     def dataframe_to_table(self, df: pd.DataFrame, tableName: str,
                            schema: Optional[str] = None,
@@ -182,20 +193,14 @@ class db:
         # Create schema if necessary/set default
         schema = self.schema_check(schema)
 
+        df = self.set_field_names_to_lower_case(df)
+        dtype = self.set_field_names_to_lower_case(dtype)
+
         # Check all required fields exist
         if self.table_exists(tableName, schema):
             if dtype is None:
                 dtype = dict(self._get_column_names_and_types(df))
 
-            # create_dtype = []
-            # for field in df.columns:
-            #     dt = dtype[field]
-            #     if dt is sqlalchemy.sql.visitors.VisitableType:
-            #         create_dtype.append(dt.compile(self.engine.dialect))
-            #     else:
-            #         create_dtype.append(dt)
-
-            # self.create_fields(df.columns, tableName, schema, create_dtype)
             self.create_fields(df.columns, tableName, schema, dtype)
 
         # write data
@@ -209,6 +214,9 @@ class db:
     def has_changed(self, new: Union[Dict, pd.Series, pd.DataFrame],
                     tableName: str, schema: str, orderBy: str,
                     reverse: bool = False) -> bool:
+        new = self.set_field_names_to_lower_case(new)
+        orderBy = orderBy.lower()
+
         if type(new) is not pd.DataFrame:
             if type(new) is dict:
                 new = pd.Series(new)

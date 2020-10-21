@@ -30,10 +30,12 @@ def updateConfigs(config):
     config = config.to_frame().T.astype(str)
 
     with db(**dbConfig) as DB:
+        dtype = {'configchangedat': sqlalchemy.types.DateTime(),
+                 'lat': sqlalchemy.types.Float(),
+                 'lon': sqlalchemy.types.Float()}
+
         DB.dataframe_to_table(config, 'config_history', schema='config',
-                              dtype={'configChangedAt': sqlalchemy.types.DateTime,
-                                     'lat': sqlalchemy.types.Float,
-                                     'lon': sqlalchemy.types.Float})
+                              dtype=dtype)
 
 
 def checkForUpdatedConfig():
@@ -41,6 +43,7 @@ def checkForUpdatedConfig():
         configs = json.load(file)
 
     with db(**dbConfig) as DB:
-        if DB.has_changed(configs, 'config_history', 'config',
-                          'configChangedAt'):
-            updateConfigs(configs)
+        has_changed = DB.has_changed(configs, 'config_history', 'config',
+                                     'configchangedat')
+    if has_changed:
+        updateConfigs(configs)

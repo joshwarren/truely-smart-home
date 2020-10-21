@@ -9,6 +9,7 @@ import sys
 import time
 import pandas as pd
 import numpy as np
+from typing import Union
 
 from config import microgen, dbConfig
 from db import db
@@ -79,7 +80,8 @@ class Microgen:
                                        'instance_no']], 'technologies', 'microgen',
                     dedup=True)
 
-    def _get_instance_no(self, techType: str, make: str, SN: str) -> [int, np.ndarray]:
+    def _get_instance_no(self, techType: str, make: str, SN: str
+                         ) -> Union[int, np.ndarray]:
         with db(**dbConfig) as DB:
             current_tech = pd.read_sql_table(
                 'technologies', DB.connection, schema='microgen')
