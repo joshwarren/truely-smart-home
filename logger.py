@@ -19,6 +19,19 @@ log_table = 'log'
 with db(**dbConfig) as DB:
     DB.create_schema(log_schema)
 
+    sql = """
+        CREATE TABLE IF NOT EXISTS log.log (
+            id int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
+            "timestamp" timestamptz NULL DEFAULT now(),
+            logged_by varchar(100) NULL,
+            log_level int2 NULL,
+            log_level_name varchar(10) NULL,
+            log_message text NULL
+        );
+    """
+    DB.session.execute(sql)
+    DB.session.commit()
+
 
 class LogDBHandler(logging.Handler):
     '''
