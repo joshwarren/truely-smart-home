@@ -82,6 +82,10 @@ class Microgen:
 
     def _get_instance_no(self, techType: str, make: str, SN: str
                          ) -> Union[int, np.ndarray]:
+        """
+        Instance no is unique id device of a given type and make so that a user might have multple Solax solar PV systems. Unique systems are identified by SN.
+        """
+
         with db(**dbConfig) as DB:
             current_tech = pd.read_sql_table(
                 'technologies', DB.connection, schema='microgen')

@@ -8,8 +8,10 @@ import logging
 import sys
 import traceback
 
-from config import dbConfig, logConfig
+from config import dbConfig, logConfig, pushNotifications
 from db import db
+import pushover
+
 
 log_schema = 'log'
 log_table = 'log'
@@ -23,6 +25,8 @@ class LogDBHandler(logging.Handler):
     Customized logging handler that puts logs to the database.
     pymssql required
     '''
+    client = pushover.Client(pushNotifications['client'],
+                             api_token=pushNotifications['token'])
 
     def __init__(self, DB, db_tbl_log: str):
         super().__init__()
@@ -54,6 +58,10 @@ class LogDBHandler(logging.Handler):
             print(sql)
             print('CRITICAL DB ERROR! Logging to database not possible!')
 
+        if record.levelno >= 40 and logConfig['push_errors']:
+            self.client.send_message(self.log_msg,
+                                     title="ERROR detected in Truely Smart Home App")
+
 
 # Set file logger
 logging.basicConfig(filename=logConfig['log_file_path'])
@@ -77,6 +85,7 @@ if logConfig['log_exceptions']:
         # f"UNCAUGHT EXCEPTION: Type: {exctype}, Value: {value}, Traceback: {tb}")
         # traceback.print_exception(exctype, value, tb)
         exception = ''.join(traceback.format_exception(exctype, value, tb))
+
         logger.exception(exception)
 
     sys.excepthook = log_exceptions

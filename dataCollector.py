@@ -7,35 +7,36 @@ import schedule
 
 import config
 from action import action
+from microGeneration import Microgen
 from octopus_tariff_app import immersion_on_during_cheapest_period, push_tariff
 from openWeather import OpenWeather
 from supply import supplier
-from microGeneration import Microgen
+from logger import logger
 
 if len(sys.argv) > 1:
     if '--include-test' in sys.argv[1]:
-        print('Starting Tests')
+        logger.info('Starting Tests')
 
-        print('Testing OpenWeather module...')
+        logger.info('Testing OpenWeather module...')
         OpenWeather.getFreshCut()
 
-        print('Testing Supplier module...')
+        logger.info('Testing Supplier module...')
         supplier().getFreshCut()
 
-        print('Testing Config module...')
+        logger.info('Testing Config module...')
         config.checkForUpdatedConfig()
 
-        print('Testing Octopus Tariff App module...')
+        logger.info('Testing Octopus Tariff App module...')
         push_tariff()
         immersion_on_during_cheapest_period()
 
-        print('Testing Action module...')
+        logger.info('Testing Action module...')
         action().execute_todo()
 
-        print('Testing Microgen module...')
+        logger.info('Testing Microgen module...')
         Microgen().getRealTimeData()
 
-        print('Tests complete')
+        logger.info('Tests complete')
 
 # Weather data
 schedule.every().day.at('02:30').do(OpenWeather.getFreshCut)
