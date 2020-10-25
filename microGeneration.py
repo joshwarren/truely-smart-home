@@ -53,8 +53,10 @@ class Solar(Microgen_base):
                     'sn': self.config['SN']})
         realTimeData = pd.DataFrame.from_records(
             response.json()['result'], index=[0])
+        # Solax inverter records time in UTC. It does not automatically adjust
+        # to BST
         realTimeData['uploadTime'] = pd.to_datetime(
-            realTimeData['uploadTime']).dt.tz_localize('Europe/London')
+            realTimeData['uploadTime']).dt.tz_localize('UTC')
 
         return realTimeData
 
