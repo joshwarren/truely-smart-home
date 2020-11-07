@@ -13,7 +13,6 @@ import pandas as pd
 import sqlalchemy
 from sqlalchemy import orm
 
-from logger import logger
 
 Session = sqlalchemy.orm.sessionmaker()
 
@@ -194,6 +193,8 @@ class db:
         """
         # Create schema if necessary/set default
         schema = self.schema_check(schema)
+
+        from logger import logger
         logger.info(f'Writing to {schema}.{tableName}')
 
         df = self.set_field_names_to_lower_case(df)

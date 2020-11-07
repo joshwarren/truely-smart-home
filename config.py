@@ -7,7 +7,6 @@ from typing import List
 import pyodbc
 
 from db import db
-from logger import logger
 
 configFile = './config.json'
 
@@ -40,6 +39,7 @@ def updateConfigs(config):
 
 
 def checkForUpdatedConfig():
+    from logger import logger
     logger.info('Running checkForUpdateConfig() from config')
 
     with open('./config.json') as file:
