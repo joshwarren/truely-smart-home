@@ -49,7 +49,7 @@ schedule.every(5).minutes.do(microgen.getRealTimeData)
 schedule.every().day.at('03:00').do(supplier().getFreshCut)
 
 # Octopus tariff
-schedule.every().day.at('01:00').do(push_tariff)
+schedule.every().day.at('18:00').do(push_tariff)
 schedule.every().day.at('01:00').do(immersion_on_during_cheapest_period)
 
 # Config History
