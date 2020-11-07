@@ -15,6 +15,7 @@ import requests
 from config import (dbConfig, electricalSupplier, pushNotifications,
                     switchCloudControl)
 from db import db
+from logger import logger
 
 
 def get_tariff(productCode: str) -> pd.DataFrame:
@@ -65,6 +66,9 @@ def get_cheapest_period(n: int = 1):
 
 
 def immersion_on_during_cheapest_period():
+    logger.info(
+        'Running immersion_on_during_cheapest_period() from octopus_tariff_app')
+
     cheapest_period = get_cheapest_period()[['valid_from', 'valid_to']]
 
     action = cheapest_period.T.reset_index(drop=True)
@@ -131,6 +135,8 @@ def plot_tariff(tariff: pd.DataFrame, timeFrom_series: str, timeTo_series: str, 
 
 
 def push_tariff():
+    logger.info('Running push_tariff() from octopus_tariff_app')
+
     client = pushover.Client(pushNotifications['client'],
                              api_token=pushNotifications['token'])
 

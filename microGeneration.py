@@ -13,6 +13,7 @@ from typing import Union
 
 from config import microgen, dbConfig
 from db import db
+from logger import logger
 
 with db(**dbConfig) as DB:
     DB.create_schema('microgen')
@@ -124,6 +125,8 @@ class Microgen:
         return instance_no
 
     def getRealTimeData(self):
+        logger.info('Running Microgen().getRealTimeData()')
+
         for idx, tech in self.technologies.iterrows():
             data = tech.object.getRealTimeData()
 

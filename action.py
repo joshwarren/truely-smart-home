@@ -3,6 +3,8 @@ import sonoff
 
 from config import dbConfig, switchCloudControl
 from db import db
+from logger import logger
+
 
 with db(**dbConfig) as DB:
     DB.create_schema('action')
@@ -72,6 +74,8 @@ class action:
         """, self.DB.connection)
 
     def execute_todo(self):
+        logger.info('Running Action().excute_todo()')
+
         self.check_multi_action()
 
         for idx, item in self.actions.iterrows():

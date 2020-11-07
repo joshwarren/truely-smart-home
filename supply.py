@@ -6,6 +6,7 @@ import requests
 
 from config import electricalSupplier, dbConfig
 from db import db
+from logger import logger
 import octopus_tariff_app as octopus
 
 with db(**dbConfig) as DB:
@@ -39,6 +40,8 @@ class supplier:
             return octopus.get_export
 
     def getFreshCut(self):
+        logger.info('Running supplier().getFreshCut()')
+
         tariff = self.get_tariff(electricalSupplier['productRef'])
         self.DB.dataframe_to_table(tariff, 'tariff', schema='supply',
                                    dedup=True)

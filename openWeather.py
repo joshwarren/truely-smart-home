@@ -6,6 +6,7 @@ import requests
 
 from config import lat, lon, openWeather, dbConfig
 from db import db
+from logger import logger
 
 with db(**dbConfig) as DB:
     DB.create_schema('weather')
@@ -16,6 +17,8 @@ class OpenWeather:
 
     @classmethod
     def getFreshCut(cls):
+        logger.info('Running OpenWeather().getFreshCut()')
+
         data = requests.get(
             f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&appid={openWeather['key']}&units=metric")
 
