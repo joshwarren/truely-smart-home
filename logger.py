@@ -88,17 +88,24 @@ if logConfig['log_to_db']:
     # Set db handler for root logger
     logging.getLogger('').addHandler(logdb)
 
-# Register logger
-logger = logging.getLogger('Truely-Smart-Home')
-logger.setLevel(logConfig['log_error_level'])
 
-if logConfig['log_exceptions']:
-    def log_exceptions(exctype, value, tb):
-        # logger.exception(
-        # f"UNCAUGHT EXCEPTION: Type: {exctype}, Value: {value}, Traceback: {tb}")
-        # traceback.print_exception(exctype, value, tb)
-        exception = ''.join(traceback.format_exception(exctype, value, tb))
+def create_logger(name: str) -> logging.Logger:
+    # Register logger
+    logger = logging.getLogger(name)
+    logger.setLevel(logConfig['log_error_level'])
 
-        logger.exception(exception)
+    if logConfig['log_exceptions']:
+        def log_exceptions(exctype, value, tb):
+            # logger.exception(
+            # f"UNCAUGHT EXCEPTION: Type: {exctype}, Value: {value}, Traceback: {tb}")
+            # traceback.print_exception(exctype, value, tb)
+            exception = ''.join(traceback.format_exception(exctype, value, tb))
 
-    sys.excepthook = log_exceptions
+            logger.exception(exception)
+
+        sys.excepthook = log_exceptions
+
+    return logger
+
+
+logger = create_logger('Truely-Smart-Home')

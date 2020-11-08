@@ -6,8 +6,10 @@ import requests
 
 from config import electricalSupplier, dbConfig
 from db import db
-from logger import logger
+from logger import create_logger
 import octopus_tariff_app as octopus
+
+logger = create_logger('supply')
 
 with db(**dbConfig) as DB:
     DB.create_schema('supply')

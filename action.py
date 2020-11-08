@@ -3,7 +3,9 @@ import sonoff
 
 from config import dbConfig, switchCloudControl
 from db import db
-from logger import logger
+from logger import create_logger
+
+logger = create_logger('action')
 
 
 with db(**dbConfig) as DB:

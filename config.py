@@ -39,7 +39,8 @@ def updateConfigs(config):
 
 
 def checkForUpdatedConfig():
-    from logger import logger
+    from logger import create_logger
+    logger = create_logger('config')
     logger.info('Running checkForUpdateConfig() from config')
 
     with open('./config.json') as file:

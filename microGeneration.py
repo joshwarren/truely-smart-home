@@ -4,6 +4,7 @@
 # See also: https://community.home-assistant.io/t/solax-solar-inverter-setup-guide/48008/82
 
 
+import logging
 import requests
 import sys
 import time
@@ -13,7 +14,9 @@ from typing import Union
 
 from config import microgen, dbConfig
 from db import db
-from logger import logger
+from logger import create_logger
+
+logger = create_logger('microGeneration')
 
 with db(**dbConfig) as DB:
     DB.create_schema('microgen')
@@ -48,10 +51,17 @@ class Solar(Microgen_base):
     techType = 'Solar'
 
     def getRealTimeData(self):
+        # try:
         response = requests.get(
             f"{self.config['API_URL']}/getRealtimeInfo.do",
             params={'tokenId': self.config['key'],
-                    'sn': self.config['SN']})
+                    'sn': self.config['SN']},
+            timeout=2)
+        # except requests.exceptions.ConnectionError:
+        #     # try again after 10 sec
+        #     time.sleep(10)
+        #     return self.getRealTimeData()
+
         realTimeData = pd.DataFrame.from_records(
             response.json()['result'], index=[0])
         # Solax inverter records time in UTC. It does not automatically adjust

@@ -6,7 +6,9 @@ import requests
 
 from config import lat, lon, openWeather, dbConfig
 from db import db
-from logger import logger
+from logger import create_logger
+
+logger = create_logger('openWeather')
 
 with db(**dbConfig) as DB:
     DB.create_schema('weather')

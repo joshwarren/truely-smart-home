@@ -15,7 +15,9 @@ import requests
 from config import (dbConfig, electricalSupplier, pushNotifications,
                     switchCloudControl)
 from db import db
-from logger import logger
+from logger import create_logger
+
+logger = create_logger('octopus_tariff_app')
 
 
 def get_tariff(productCode: str) -> pd.DataFrame:
