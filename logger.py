@@ -96,9 +96,6 @@ def create_logger(name: str) -> logging.Logger:
 
     if logConfig['log_exceptions']:
         def log_exceptions(exctype, value, tb):
-            # logger.exception(
-            # f"UNCAUGHT EXCEPTION: Type: {exctype}, Value: {value}, Traceback: {tb}")
-            # traceback.print_exception(exctype, value, tb)
             exception = ''.join(traceback.format_exception(exctype, value, tb))
 
             logger.exception(exception)

@@ -50,17 +50,23 @@ class Microgen_base:
 class Solar(Microgen_base):
     techType = 'Solar'
 
+    def _get_data(self):
+        """Method will keep trying API every 10 sec until success"""
+
+        try:
+            return requests.get(
+                f"{self.config['API_URL']}/getRealtimeInfo.do",
+                params={'tokenId': self.config['key'],
+                        'sn': self.config['SN']},
+                timeout=2)
+        except (requests.exceptions.ConnectionError,
+                requests.exceptions.ReadTimeout):
+            # try again after 10 sec
+            time.sleep(10)
+            return self._get_data()
+
     def getRealTimeData(self):
-        # try:
-        response = requests.get(
-            f"{self.config['API_URL']}/getRealtimeInfo.do",
-            params={'tokenId': self.config['key'],
-                    'sn': self.config['SN']},
-            timeout=2)
-        # except requests.exceptions.ConnectionError:
-        #     # try again after 10 sec
-        #     time.sleep(10)
-        #     return self.getRealTimeData()
+        response = self._get_data()
 
         realTimeData = pd.DataFrame.from_records(
             response.json()['result'], index=[0])
@@ -104,8 +110,8 @@ class Microgen:
                 'technologies', DB.connection, schema='microgen')
 
         instance_no = current_tech[(current_tech['type'] == techType)
-                                   * (current_tech['make'] == make)
-                                   * (current_tech['sn'] == SN)
+                                   & (current_tech['make'] == make)
+                                   & (current_tech['sn'] == SN)
                                    ]
         assert len(
             instance_no) < 2, "Multiple instances of the same microgen technologies have been found in microgen.technologies table."
