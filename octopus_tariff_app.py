@@ -15,9 +15,9 @@ import requests
 from config import (dbConfig, electricalSupplier, pushNotifications,
                     switchCloudControl)
 from db import db
-from logger import create_logger
+# from logger import create_logger
 
-logger = create_logger('octopus_tariff_app')
+# logger = create_logger('octopus_tariff_app')
 
 
 def get_tariff(productCode: str) -> pd.DataFrame:
@@ -68,8 +68,8 @@ def get_cheapest_period(n: int = 1):
 
 
 def immersion_on_during_cheapest_period():
-    logger.info(
-        'Running immersion_on_during_cheapest_period() from octopus_tariff_app')
+    # logger.info(
+    #     'Running immersion_on_during_cheapest_period() from octopus_tariff_app')
 
     cheapest_period = get_cheapest_period()[['valid_from', 'valid_to']]
 
@@ -83,13 +83,72 @@ def immersion_on_during_cheapest_period():
         DB.dataframe_to_table(action, 'action', schema='action')
 
 
+def is_edge_nan(arr: np.ndarray) -> np.ndarray:
+    """
+    Returns boolean array idenfiying outer nans in group. e.g.
+
+    $ is_edge_nan([1, nan, nan, nan, 3, nan, nan])
+    >>> [False, True, False, True, False, True, False]
+    """
+
+    return np.isnan(arr) \
+        * (np.append(~np.isnan(arr[1:]), False)  # i+1 nan?
+            + np.append(False, ~np.isnan(arr[:-1]))  # i-1 nan?
+           )
+
+
+def split_array(x: np.ndarray, y: np.ndarray, split: float, above: bool = True
+                ) -> Tuple[np.ndarray, np.ndarray]:
+    """Split array at a given y value. Used to change color of plot at e.g. y = 0
+
+    Args:
+        x (np.ndarray): x value of plot
+        y (np.ndarray): y value of plot
+        split (float): value when split is to occur
+        above (bool, optional): If True, returns y array above split. Defaults to True.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: x and y to plot. NB: both x and y have been over sampled to ensure that correct gaps are plotted by matplotlib.
+    """
+
+    # Over sample
+    i = np.arange(len(x) * 2, step=2)
+    i_interp = np.arange(len(x) * 2)
+
+    dtype = x.dtype  # Allows np.interp to handle datetime dtypes
+    x = np.interp(i_interp, i, x.astype(float)).astype(dtype)
+
+    dtype = y .dtype
+    y = np.interp(i_interp, i, y.astype(float)).astype(dtype)
+
+    # Apply split
+    if above:
+        y[y <= split] = np.nan
+    else:
+        y[y > split] = np.nan
+
+    # go to boundary
+    y[is_edge_nan(y)] = split
+
+    return x, y
+
+
 def plot_tariff(tariff: pd.DataFrame, timeFrom_series: str, timeTo_series: str, value_series: str, saveTo: str = None) -> pd.DataFrame:
     plt.style.use("cyberpunk")
 
     tariff['diff'] = -tariff[value_series].diff(periods=1)
 
     fig, ax = plt.subplots()
-    ax.step(tariff[timeFrom_series], tariff[value_series])
+
+    # Create step functions
+    timeFrom = tariff[timeFrom_series].repeat(2).values[:-1]
+    value = tariff[value_series].repeat(2).values[1:]
+
+    x, pos = split_array(timeFrom, value, 0, True)
+    _, neg = split_array(timeFrom, value, 0, False)
+
+    ax.plot(x, pos, color='c')
+    ax.plot(x, neg, color='r')
 
     # Set x axis labels
     freq = '3H'
@@ -137,7 +196,7 @@ def plot_tariff(tariff: pd.DataFrame, timeFrom_series: str, timeTo_series: str, 
 
 
 def push_tariff():
-    logger.info('Running push_tariff() from octopus_tariff_app')
+    # logger.info('Running push_tariff() from octopus_tariff_app')
 
     client = pushover.Client(pushNotifications['client'],
                              api_token=pushNotifications['token'])
@@ -160,4 +219,4 @@ def push_tariff():
 
 if __name__ == '__main__':
     push_tariff()
-    immersion_on_during_cheapest_period()
+    # immersion_on_during_cheapest_period()
