@@ -196,7 +196,6 @@ def plot_tariff(tariff: pd.DataFrame, timeFrom_series: str, timeTo_series: str, 
 
 
 def push_tariff():
-    # logger.info('Running push_tariff() from octopus_tariff_app')
 
     client = pushover.Client(pushNotifications['client'],
                              api_token=pushNotifications['token'])
@@ -213,8 +212,14 @@ def push_tariff():
             "%M") == "00" else "%I:%M %p %a %d %b").lstrip("0")
 
     with open('octopus_tariff.png', 'rb') as attachment:
-        client.send_message(f"{start_time} to {end_time}",
-                            title="Octopus Tariff", attachment=attachment)
+        try:
+            # logger.info('Pushing tariff plot to pushover')
+            client.send_message(f"{start_time} to {end_time}",
+                                title="Octopus Tariff", attachment=attachment)
+        except requests.exceptions.ConnectionError:
+            # Error connecting to pushover api
+            # logger.error(f'Error connecting to PushOver API from {__file__}.')
+            pass
 
 
 if __name__ == '__main__':
