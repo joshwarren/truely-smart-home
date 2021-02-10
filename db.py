@@ -7,6 +7,7 @@ contex manager. This ensures that connections are automatically closed
 and not accidentally left open.
 """
 
+import enum
 from typing import List, Optional, Union, Dict, Tuple
 
 import pandas as pd
@@ -348,3 +349,14 @@ class db:
 
         self.session.execute(sql)
         self.session.commit()
+
+    def lookup_table(self, table: str, schema: str, index: str = 'id'):
+        data = pd.read_sql_table(
+            table, self.connection, schema=schema, index_col=index)
+        field_name = data.columns[0]
+        data_dict = data.to_dict()[field_name]
+
+        # reverse keys and values
+        data_dict = dict(map(reversed, data_dict.items()))
+
+        return enum.Enum(table, data_dict)

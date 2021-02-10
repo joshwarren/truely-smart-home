@@ -12,8 +12,7 @@ import pushover
 import pytz
 import requests
 
-from config import (dbConfig, electricalSupplier, pushNotifications,
-                    switchCloudControl)
+from config import (dbConfig, electricalSupplier, pushNotifications)
 from db import db
 # from logger import create_logger
 
@@ -64,22 +63,27 @@ def get_cheapest_period(n: int = 1):
     tariff = tariff[tariff['valid_to'] >
                     datetime.now(pytz.timezone('Europe/London'))]
 
-    return tariff[tariff.value_inc_vat == tariff.value_inc_vat.min()].head(n)
+    return tariff.sort_values('value_inc_vat', ascending=True).head(n)
 
 
 def immersion_on_during_cheapest_period():
     # logger.info(
     #     'Running immersion_on_during_cheapest_period() from octopus_tariff_app')
 
-    cheapest_period = get_cheapest_period()[['valid_from', 'valid_to']]
+    cheapest_period = get_cheapest_period(2)[['valid_from', 'valid_to']]
 
-    action = cheapest_period.T.reset_index(drop=True)
-    action.columns = ['action_time']
-    action = action.sort_values('action_time')
-    action['action'] = ['on', 'off']
-    action['device_id'] = switchCloudControl['user_apikey']
+    action = pd.melt(cheapest_period).sort_values(['value', 'variable'])
+    action['action'] = 'on'
+    action['action'][action['variable'] == 'valid_to'] = 'off'
+    action.rename(columns={'value': 'action_time'}, inplace=True)
+    action.drop('variable', axis=1, inplace=True)
+
+    action['device_id'] = 'Immersion'
 
     with db(**dbConfig) as DB:
+        device_type = DB.lookup_table('device_type', 'action', index='id')
+        action['device_type'] = device_type.Shelly.value
+
         DB.dataframe_to_table(action, 'action', schema='action')
 
 
