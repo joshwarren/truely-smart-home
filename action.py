@@ -224,6 +224,7 @@ class action:
     DB = db(**dbConfig)
 
     Status = DB.lookup_table('status', 'action', index='status')
+    Device_type = DB.lookup_table('device_type', 'action', index='id')
 
     def check_multi_action(self):
         """
@@ -259,11 +260,12 @@ class action:
             ORDER BY action_time DESC
         """, self.DB.connection)
 
-    @staticmethod
-    def create_device(device_type: str):
-        if device_type == 'Sonoff':
+    def create_device(self, device_type: int):
+        device_type = self.Device_type(device_type)
+
+        if device_type == self.Device_type.Sonoff:
             return Sonoff
-        elif device_type == 'Shelly':
+        elif device_type == self.Device_type.Shelly:
             return Shelly
 
     def execute_todo(self):
