@@ -123,9 +123,10 @@ with db(**dbConfig) as DB:
 class Device_Base:
     device_type: str = None
 
-    def __init__(self, username: str = None, password: str = None, device_id: str = None):
-
+    def __init__(self, device_id: str = None):
         self.device_id = device_id
+
+        self.get_credentials()
 
     def get_credentials(self):
         with open(devices_file, 'r') as f:
@@ -153,6 +154,7 @@ class Sonoff(Device_Base):
 
     def __init__(self, device_id: str = None):
         super().__init__(device_id)
+        self.get_credentials()
 
         self.sonoff_account = sonoff.Sonoff(self.username,
                                             self.password,
