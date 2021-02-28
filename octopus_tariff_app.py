@@ -66,18 +66,48 @@ def get_cheapest_period(n: int = 1):
     return tariff.sort_values('value_inc_vat', ascending=True).head(n)
 
 
+def create_actions(df: pd.DataFrame, start: str = 'From', end: str = 'To', start_action: str = 'on', end_action: str = 'off') -> pd.DataFrame:
+    """Transform table with From and To fields to actions
+
+    Args:
+        df (pd.DataFrame): Dataframe with schema which includes start and end time fields for actions
+        start (str, optional): name of start time field. Defaults to 'From'.
+        end (str, optional): name of end time field. Defaults to 'To'.
+        start_action (str, optional): Action at start. None results in no action set. Defaults to 'on'.
+        end_action (str, optional): As start_action. Defaults to 'off'.
+
+    Returns:
+        pd.DataFrame: [description]
+    """
+
+    # Discard unneeded fields
+    df = df[[start, end]]
+
+    action = pd.melt(df).sort_values(['value', 'variable'])
+
+    # set actions
+    action['action'] = start_action
+    action['action'][action['variable'] == end] = end_action
+
+    # Drop None values in action field
+    action.dropna(subset=['action'], inplace=True)
+
+    # prepare to return
+    action.rename(columns={'value': 'action_time'}, inplace=True)
+    action.drop('variable', axis=1, inplace=True)
+
+    return action
+
+
 def immersion_on_during_cheapest_period():
     # logger.info(
     #     'Running immersion_on_during_cheapest_period() from octopus_tariff_app')
 
-    cheapest_period = get_cheapest_period(2)[['valid_from', 'valid_to']]
+    set_n_periods = electricalSupplier['auto_immersion_periods']
+    cheapest_period = get_cheapest_period(set_n_periods)
 
-    action = pd.melt(cheapest_period).sort_values(['value', 'variable'])
-    action['action'] = 'on'
-    action['action'][action['variable'] == 'valid_to'] = 'off'
-    action.rename(columns={'value': 'action_time'}, inplace=True)
-    action.drop('variable', axis=1, inplace=True)
-
+    action = create_actions(
+        cheapest_period, start='valid_from', end='valid_to')
     action['device_id'] = 'Immersion'
 
     with db(**dbConfig) as DB:
