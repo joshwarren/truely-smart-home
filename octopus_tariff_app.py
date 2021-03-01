@@ -14,14 +14,19 @@ import requests
 
 from config import (dbConfig, electricalSupplier, pushNotifications)
 from db import db
-# from logger import create_logger
+from logger import create_logger
 
-# logger = create_logger('octopus_tariff_app')
+logger = create_logger('octopus_tariff_app')
 
 
 def get_tariff(productCode: str) -> pd.DataFrame:
-    agileProduct = requests.get(
-        f"{electricalSupplier['API_URL']}/products/{productCode}/electricity-tariffs/E-1R-{productCode}-L/standard-unit-rates/")
+    try:
+        url = f"{electricalSupplier['API_URL']}/products/{productCode}/electricity-tariffs/E-1R-{productCode}-L/standard-unit-rates/"
+        agileProduct = requests.get(url)
+    except requests.urllib3.exceptions.MaxRetryError:
+        logger.error(f'API attempt failed: {url}')
+        return
+
     tariff = pd.DataFrame.from_records(
         json.loads(agileProduct.text)['results'])
 
@@ -60,6 +65,8 @@ def get_usage_base(MPAN) -> pd.DataFrame:
 
 def get_cheapest_period(n: int = 1):
     tariff = get_tariff(electricalSupplier['productRef'])
+    if tariff is None:
+        return
     tariff = tariff[tariff['valid_to'] >
                     datetime.now(pytz.timezone('Europe/London'))]
 
@@ -105,6 +112,8 @@ def immersion_on_during_cheapest_period():
 
     set_n_periods = electricalSupplier['auto_immersion_periods']
     cheapest_period = get_cheapest_period(set_n_periods)
+    if cheapest_period is None:
+        return
 
     action = create_actions(
         cheapest_period, start='valid_from', end='valid_to')
@@ -235,6 +244,8 @@ def push_tariff():
                              api_token=pushNotifications['token'])
 
     tariff = get_tariff(electricalSupplier['productRef'])
+    if tariff is None:
+        return
     plot_tariff(tariff, 'valid_from', 'valid_to',
                 'value_inc_vat', saveTo='octopus_tariff.png')
 
