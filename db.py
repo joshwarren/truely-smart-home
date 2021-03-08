@@ -27,32 +27,39 @@ class db:
         self.password = password
         self.dbType = dbType
 
-        if self.dbType == 'tsql':
-            engine_stmt = "mssql+pyodbc://"
-        elif self.dbType == 'PostgreSQL':
-            engine_stmt = "postgresql://"
-        else:
-            assert False, f"The parameter dbType must be 'tsql' or 'PostgreSQL' not {self.dbType}"
-
-        if self.username is not None:
-            engine_stmt += self.username
-            if self.password is not None:
-                engine_stmt += f":{self.password}"
-
-            engine_stmt += '@'
-
-        engine_stmt += self.server
-        if self.port is not None:
-            engine_stmt += f':{self.port}'
-        engine_stmt += f'/{self.database}'
-
-        # if self.username is None:
-        #     engine_stmt += "?trusted_connection=yes"
-
+        engine_stmt = self.engine_stmt(self.server, database=self.database,
+                                       username=self.username,
+                                       password=self.password, port=self.port,
+                                       dbType=self.dbType)
         self.engine = sqlalchemy.create_engine(engine_stmt)
         self.connection = self.engine.connect()
 
         self.session = Session(bind=self.connection)
+
+    @staticmethod
+    def engine_stmt(server: str, database: str = None, username: str = None, password: str = None, port: int = None, dbType='tsql') -> str:
+        if dbType == 'tsql':
+            engine_stmt = "mssql+pyodbc://"
+        elif dbType == 'PostgreSQL':
+            engine_stmt = "postgresql://"
+        else:
+            assert False, f"The parameter dbType must be 'tsql' or 'PostgreSQL' not {dbType}"
+
+        if username is not None:
+            engine_stmt += username
+            if password is not None:
+                engine_stmt += f":{password}"
+
+            engine_stmt += '@'
+
+        engine_stmt += server
+        if port is not None:
+            engine_stmt += f':{port}'
+        engine_stmt += f'/{database}'
+        # if self.username is None:
+        #     engine_stmt += "?trusted_connection=yes"
+
+        return engine_stmt
 
     @property
     def defaultSchema(self):
