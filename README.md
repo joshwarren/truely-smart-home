@@ -12,15 +12,15 @@ Data sources:
 * [Octopus tariff API](https://developer.octopus.energy/docs/api/#agile-octopus)
 * [Solax Inverter](https://www.solaxcloud.com/)
 * Smart meter (installation is very soon)
-* remote temomiters installed with underfloor heating
+* remote thermometers installed with underfloor heating
 
 ## Current state of play
-A proof of consept has been developed to run in a Docker container on a Raspberry Pi 3. This collect daily data cuts from Open Weather and Octopus Energy, saving it to a Postgres database.
+A proof of concept has been developed to run in a Docker container on a Raspberry Pi 3. This collect daily data cuts from Open Weather and Octopus Energy, saving it to a Postgres database.
 
 ## Future plans
 * Use data science techniques (e.g. machine learning) to investigate how we use energy and if any savings could be made.
 * Automate switching systems on/off depending on need e.g. 
-  * turning on heating when electricity is cheapest (or the pannels are producing eletricity) if we are going to need the energy
+  * turning on heating when electricity is cheapest (or the pannels are producing electricity) if we are going to need the energy
   * Charging battery from the grid if Octopus tariffs turn negative i.e. they pay us to use electricity - it does happen [sometimes](https://octopus.energy/blog/social-distancing-renewable-energy-negative-pricing/)
 * Produce a mobile app to control aspects of the home remotely
   * Extend this to use mobile as a data source - e.g. turn on heating when I'm 10 mins away from home. 
