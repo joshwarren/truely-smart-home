@@ -246,6 +246,11 @@ def push_tariff():
     tariff = get_tariff(electricalSupplier['productRef'])
     if tariff is None:
         return
+
+    # Only show the future
+    tariff = tariff[tariff['valid_to'] >
+                    datetime.now(pytz.timezone('Europe/London'))]
+
     plot_tariff(tariff, 'valid_from', 'valid_to',
                 'value_inc_vat', saveTo='octopus_tariff.png')
 
